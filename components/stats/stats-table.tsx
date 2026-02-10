@@ -46,12 +46,13 @@ export function StatsTable<T extends Record<string, unknown>>({
           </tr>
         </thead>
         <tbody>
-          {data.map((row) => (
+          {data.map((row, i) => (
             <tr
               key={keyExtractor(row)}
               {...(onRowClick ? { onClick: () => onRowClick(row) } : {})}
               className={cn(
                 "border-b border-border/50 transition-colors",
+                i % 2 === 1 && "bg-zinc-800/30",
                 onRowClick && "cursor-pointer hover:bg-zinc-800/50"
               )}
             >
