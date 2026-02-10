@@ -1,65 +1,173 @@
-import Image from "next/image";
+import Link from "next/link";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+import { LeagueStandings } from "@/components/teams/league-standings";
+import { GameScoreCard } from "@/components/games/game-score-card";
+import { LeaderCard } from "@/components/stats/leader-card";
+import { getTeamStandings } from "@/lib/queries/teams";
+import { getRecentGames, getUpcomingGames } from "@/lib/queries/games";
+import { getBattingLeaders, getHomeRunLeaders } from "@/lib/queries/stats";
+import { isAdmin } from "@/lib/auth";
+import { Trophy, Calendar, TrendingUp, Plus } from "lucide-react";
+import type { GameWithTeams, TeamStanding } from "@/lib/types";
 
-export default function Home() {
+export default async function DashboardPage() {
+  const [standings, recentGames, upcomingGames, avgLeaders, hrLeaders, admin] =
+    await Promise.all([
+      getTeamStandings().catch(() => [] as TeamStanding[]),
+      getRecentGames(4).catch(() => []) as Promise<GameWithTeams[]>,
+      getUpcomingGames(4).catch(() => []) as Promise<GameWithTeams[]>,
+      getBattingLeaders(undefined, 5).catch(() => []),
+      getHomeRunLeaders(undefined, 5).catch(() => []),
+      isAdmin(),
+    ]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <PageHeader
+        title="Dashboard"
+        description="Resumen de la Liga de Softball"
+      />
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left column: Standings + Recent */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Standings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Clasificación</CardTitle>
+              <Link href="/equipos">
+                <Button variant="ghost" size="sm">Ver todos</Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {standings.length > 0 ? (
+                <LeagueStandings standings={standings} />
+              ) : (
+                <EmptyState
+                  icon={<Trophy size={32} />}
+                  title="Sin datos"
+                  description="La clasificación aparecerá cuando haya juegos finalizados"
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent games */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Juegos Recientes</CardTitle>
+              <Link href="/juegos">
+                <Button variant="ghost" size="sm">Ver todos</Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {recentGames.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2 stagger-children">
+                  {recentGames.map((game) => (
+                    <GameScoreCard key={game.id} game={game} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<Calendar size={32} />}
+                  title="Sin juegos recientes"
+                  description="Los resultados aparecerán aquí"
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming games */}
+          {upcomingGames.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Próximos Juegos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 stagger-children">
+                  {upcomingGames.map((game) => (
+                    <GameScoreCard key={game.id} game={game} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* Right column: Leaders */}
+        <div className="space-y-6">
+          {avgLeaders.length > 0 ? (
+            <LeaderCard
+              title="Líderes de Bateo (AVG)"
+              entries={avgLeaders.map((l, i) => ({
+                rank: i + 1,
+                name: `${l.first_name} ${l.last_name}`,
+                team: l.team_short_name,
+                value: l.avg.toFixed(3).replace(/^0/, ""),
+                teamColor: l.team_color,
+              }))}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Líderes de Bateo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <EmptyState
+                  icon={<TrendingUp size={28} />}
+                  title="Sin datos"
+                  description="Los líderes aparecerán cuando haya estadísticas"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {hrLeaders.length > 0 && (
+            <LeaderCard
+              title="Líderes de HR"
+              entries={hrLeaders.map((l, i) => ({
+                rank: i + 1,
+                name: `${l.first_name} ${l.last_name}`,
+                team: l.team_short_name,
+                value: l.hr,
+                teamColor: l.team_color,
+              }))}
+            />
+          )}
+
+          {/* Quick actions - admin only */}
+          {admin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Acciones Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Link href="/juegos/nuevo" className="block">
+                  <Button variant="secondary" className="w-full justify-start">
+                    <Plus size={16} />
+                    Programar Juego
+                  </Button>
+                </Link>
+                <Link href="/admin/jugadores/nuevo" className="block">
+                  <Button variant="secondary" className="w-full justify-start">
+                    <Plus size={16} />
+                    Registrar Jugador
+                  </Button>
+                </Link>
+                <Link href="/admin/equipos/nuevo" className="block">
+                  <Button variant="secondary" className="w-full justify-start">
+                    <Plus size={16} />
+                    Crear Equipo
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
