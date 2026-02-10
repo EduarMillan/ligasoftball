@@ -4,12 +4,27 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PATHS = ["/admin", "/juegos/nuevo"];
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const response = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
+  const isLoginPage = pathname === "/auth/login";
+
+  // Only run Supabase auth check when needed
+  if (!isProtected && !isLoginPage) {
+    return response;
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    // Env vars missing — don't block the app
+    return response;
+  }
+
+  try {
+    const supabase = createServerClient(url, key, {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
@@ -18,26 +33,27 @@ export async function middleware(request: NextRequest) {
           });
         },
       },
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (isProtected) {
+      if (!user || user.email !== process.env.ADMIN_EMAIL) {
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
     }
-  );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isProtected = PROTECTED_PATHS.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
-
-  if (isProtected) {
-    if (!user || user.email !== process.env.ADMIN_EMAIL) {
+    // If already logged in and going to /auth/login, redirect to /admin
+    if (isLoginPage && user) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+  } catch {
+    // Auth check failed — let the request through on public routes
+    if (isProtected) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
-  }
-
-  // If already logged in and going to /auth/login, redirect to /admin
-  if (request.nextUrl.pathname === "/auth/login" && user) {
-    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return response;
