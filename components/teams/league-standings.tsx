@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils/cn";
 import { calcWinPct } from "@/lib/utils/stats";
+import { Avatar } from "@/components/ui/avatar";
 import type { TeamStanding } from "@/lib/types";
 
 interface LeagueStandingsProps {
@@ -42,18 +43,12 @@ export function LeagueStandings({ standings, className }: LeagueStandingsProps) 
               <td className="px-3 py-2.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-zinc-600 w-4">{i + 1}</span>
-                  {team.logo_url ? (
-                    <img
-                      src={team.logo_url}
-                      alt={team.team_name}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="w-6 h-6 rounded-full"
-                      style={{ backgroundColor: team.primary_color }}
-                    />
-                  )}
+                  <Avatar
+                    src={team.logo_url}
+                    alt={team.team_name}
+                    fallback={team.short_name.slice(0, 2)}
+                    size="sm"
+                  />
                   <span className="font-medium">{team.team_name}</span>
                 </div>
               </td>
