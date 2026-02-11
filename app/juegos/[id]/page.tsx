@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BoxScore } from "@/components/games/box-score";
+import { QuickScoreForm } from "@/components/games/quick-score-form";
 import { GameStatusControl } from "@/components/games/game-status-control";
 import { getGame } from "@/lib/queries/games";
 import { getPlayerGameStats } from "@/lib/queries/stats";
 import { formatGameDate } from "@/lib/utils/format";
-import { BarChart3, ClipboardList, MapPin, User, Users } from "lucide-react";
+import { BarChart3, ClipboardList, MapPin, Pencil, User, Users } from "lucide-react";
 import type { GameWithTeams, PlayerGameStats, Player } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -39,12 +40,20 @@ export default async function JuegoDetailPage({
         title="Detalle del Juego"
         description={formatGameDate(game.game_date)}
         action={
-          <Link href={`/admin/juegos/${id}/estadisticas`}>
-            <Button variant="secondary" size="sm">
-              <ClipboardList size={14} />
-              Stats
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/admin/juegos/${id}/editar`}>
+              <Button variant="secondary" size="sm">
+                <Pencil size={14} />
+                Editar
+              </Button>
+            </Link>
+            <Link href={`/admin/juegos/${id}/estadisticas`}>
+              <Button variant="secondary" size="sm">
+                <ClipboardList size={14} />
+                Stats
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -119,21 +128,15 @@ export default async function JuegoDetailPage({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Box Score</CardTitle>
+            <CardTitle>Marcador Rápido</CardTitle>
           </CardHeader>
           <CardContent>
-            <EmptyState
-              icon={<BarChart3 size={32} />}
-              title="Sin estadísticas"
-              description="Registra las estadísticas del juego"
-              action={
-                <Link href={`/admin/juegos/${id}/estadisticas`}>
-                  <Button size="sm">
-                    <ClipboardList size={14} />
-                    Registrar Stats
-                  </Button>
-                </Link>
-              }
+            <QuickScoreForm
+              gameId={id}
+              homeTeamName={game.home_team.name}
+              awayTeamName={game.away_team.name}
+              homeScore={game.home_score}
+              awayScore={game.away_score}
             />
           </CardContent>
         </Card>

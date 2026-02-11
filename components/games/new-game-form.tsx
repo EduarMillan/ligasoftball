@@ -4,15 +4,16 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import type { Team, Season } from "@/lib/types";
+import type { Team, Season, GameWithTeams } from "@/lib/types";
 
 interface NewGameFormProps {
   teams: Team[];
   seasons: Season[];
+  game?: GameWithTeams;
   onSubmit: (prevState: unknown, data: FormData) => Promise<{ error?: string } | void>;
 }
 
-export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
+export function NewGameForm({ teams, seasons, game, onSubmit }: NewGameFormProps) {
   const [state, formAction, isPending] = useActionState(onSubmit, null);
 
   const teamOptions = teams.map((t) => ({ value: t.id, label: t.name }));
@@ -22,6 +23,10 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
   }));
 
   const activeSeason = seasons.find((s) => s.is_active);
+  const defaultSeasonId = game?.season_id ?? activeSeason?.id;
+  const defaultDate = game?.game_date
+    ? new Date(game.game_date).toISOString().slice(0, 16)
+    : undefined;
 
   return (
     <form action={formAction} className="space-y-4">
@@ -37,7 +42,7 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
         label="Temporada"
         options={seasonOptions}
         placeholder="Selecciona una temporada"
-        defaultValue={activeSeason?.id}
+        defaultValue={defaultSeasonId}
         required
       />
 
@@ -48,6 +53,7 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
           label="Equipo Local"
           options={teamOptions}
           placeholder="Selecciona equipo"
+          defaultValue={game?.home_team_id}
           required
         />
         <Select
@@ -56,6 +62,7 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
           label="Equipo Visitante"
           options={teamOptions}
           placeholder="Selecciona equipo"
+          defaultValue={game?.away_team_id}
           required
         />
       </div>
@@ -66,6 +73,7 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
           name="game_date"
           type="datetime-local"
           label="Fecha y Hora"
+          defaultValue={defaultDate}
           required
         />
         <Input
@@ -73,7 +81,7 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
           name="innings"
           type="number"
           label="Innings"
-          defaultValue={7}
+          defaultValue={game?.innings ?? 7}
           min={1}
         />
       </div>
@@ -83,6 +91,7 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
         name="location"
         label="Ubicación"
         placeholder="Nombre del campo"
+        defaultValue={game?.location ?? ""}
       />
 
       <Input
@@ -90,10 +99,11 @@ export function NewGameForm({ teams, seasons, onSubmit }: NewGameFormProps) {
         name="umpire"
         label="Árbitro"
         placeholder="Nombre del árbitro"
+        defaultValue={game?.umpire ?? ""}
       />
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="submit" loading={isPending}>Crear Juego</Button>
+        <Button type="submit" loading={isPending}>{game ? "Guardar Cambios" : "Crear Juego"}</Button>
       </div>
     </form>
   );

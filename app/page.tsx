@@ -8,19 +8,20 @@ import { GameScoreCard } from "@/components/games/game-score-card";
 import { LeaderCard } from "@/components/stats/leader-card";
 import { getTeamStandings } from "@/lib/queries/teams";
 import { getRecentGames, getUpcomingGames } from "@/lib/queries/games";
-import { getBattingLeaders, getHomeRunLeaders } from "@/lib/queries/stats";
+import { getBattingLeaders, getHomeRunLeaders, getStolenBaseLeaders } from "@/lib/queries/stats";
 import { isAdmin } from "@/lib/auth";
 import { Trophy, Calendar, TrendingUp, Plus } from "lucide-react";
 import type { GameWithTeams, TeamStanding } from "@/lib/types";
 
 export default async function DashboardPage() {
-  const [standings, recentGames, upcomingGames, avgLeaders, hrLeaders, admin] =
+  const [standings, recentGames, upcomingGames, avgLeaders, hrLeaders, sbLeaders, admin] =
     await Promise.all([
       getTeamStandings().catch(() => [] as TeamStanding[]),
       getRecentGames(4).catch(() => []) as Promise<GameWithTeams[]>,
       getUpcomingGames(4).catch(() => []) as Promise<GameWithTeams[]>,
       getBattingLeaders(undefined, 5).catch(() => []),
       getHomeRunLeaders(undefined, 5).catch(() => []),
+      getStolenBaseLeaders(undefined, 5).catch(() => []),
       isAdmin(),
     ]);
 
@@ -133,6 +134,19 @@ export default async function DashboardPage() {
                 name: `${l.first_name} ${l.last_name}`,
                 team: l.team_short_name,
                 value: l.hr,
+                teamColor: l.team_color,
+              }))}
+            />
+          )}
+
+          {sbLeaders.length > 0 && (
+            <LeaderCard
+              title="Líderes de SB"
+              entries={sbLeaders.map((l, i) => ({
+                rank: i + 1,
+                name: `${l.first_name} ${l.last_name}`,
+                team: l.team_short_name,
+                value: l.sb,
                 teamColor: l.team_color,
               }))}
             />

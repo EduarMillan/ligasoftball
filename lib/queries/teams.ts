@@ -27,7 +27,8 @@ export async function getTeamStandings(): Promise<TeamStanding[]> {
   const { data, error } = await supabase
     .from("team_standings")
     .select("*")
-    .order("win_pct", { ascending: false });
+    .order("wins", { ascending: false })
+    .order("run_diff", { ascending: false });
   if (error) throw error;
   return data as TeamStanding[];
 }

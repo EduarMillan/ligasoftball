@@ -42,10 +42,18 @@ export function LeagueStandings({ standings, className }: LeagueStandingsProps) 
               <td className="px-3 py-2.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-zinc-600 w-4">{i + 1}</span>
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: team.primary_color }}
-                  />
+                  {team.logo_url ? (
+                    <img
+                      src={team.logo_url}
+                      alt={team.team_name}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-6 h-6 rounded-full"
+                      style={{ backgroundColor: team.primary_color }}
+                    />
+                  )}
                   <span className="font-medium">{team.team_name}</span>
                 </div>
               </td>

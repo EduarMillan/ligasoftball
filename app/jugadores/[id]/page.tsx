@@ -7,8 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PlayerProfile } from "@/components/players/player-profile";
 import { StatsGrid } from "@/components/stats/stats-grid";
 import { PlayerGameLog } from "@/components/players/player-game-log";
-import { getPlayer } from "@/lib/queries/players";
-import { getPlayerCareerBatting } from "@/lib/queries/players";
+import { getPlayer, getPlayerCareerBatting, getPlayerCareerFielding } from "@/lib/queries/players";
 import { getPlayerGameLog } from "@/lib/queries/stats";
 import { formatFullName } from "@/lib/utils/format";
 import { DeletePlayerButton } from "@/components/players/delete-player-button";
@@ -29,12 +28,14 @@ export default async function JugadorDetailPage({
     notFound();
   }
 
-  const [battingStats, gameLog] = await Promise.all([
+  const [battingStats, fieldingStats, gameLog] = await Promise.all([
     getPlayerCareerBatting(id),
+    getPlayerCareerFielding(id),
     getPlayerGameLog(id),
   ]);
 
   const batting = battingStats[0];
+  const fielding = fieldingStats[0];
 
   return (
     <>
@@ -77,6 +78,7 @@ export default async function JugadorDetailPage({
                 { label: "BB", value: batting.bb },
                 { label: "SO", value: batting.so },
                 { label: "SB", value: batting.sb },
+                { label: "E", value: fielding?.e ?? 0 },
                 { label: "AVG", value: batting.avg.toFixed(3).replace(/^0/, "") },
                 { label: "OBP", value: batting.obp.toFixed(3).replace(/^0/, "") },
                 { label: "OPS", value: batting.ops.toFixed(3).replace(/^0/, "") },

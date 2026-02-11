@@ -115,6 +115,27 @@ export async function getRbiLeaders(
   return data as SeasonBattingLeader[];
 }
 
+export async function getStolenBaseLeaders(
+  seasonId?: string,
+  limit = 5
+): Promise<SeasonBattingLeader[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("season_batting_leaders")
+    .select("*")
+    .gt("sb", 0)
+    .order("sb", { ascending: false })
+    .limit(limit);
+
+  if (seasonId) {
+    query = query.eq("season_id", seasonId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as SeasonBattingLeader[];
+}
+
 export async function getGameInnings(gameId: string): Promise<GameInning[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
