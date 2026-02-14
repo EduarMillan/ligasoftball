@@ -18,7 +18,6 @@ interface StatEntryTableProps {
 }
 
 const battingCols = [
-  { key: "pa", label: "PA", title: "Apariciones al plato", field: "plate_appearances" as const },
   { key: "ab", label: "AB", title: "Turnos al bate", field: "at_bats" as const },
   { key: "r", label: "R", title: "Carreras", field: "runs" as const },
   { key: "h", label: "H", title: "Hits", field: "hits" as const },
@@ -36,6 +35,9 @@ const battingCols = [
   { key: "e", label: "E", title: "Errores", field: "errors" as const },
 ];
 
+// Fields that contribute to PA = AB + BB + HBP + SF
+const paFields = new Set(["ab", "bb", "hbp", "sf"]);
+
 type StatField = (typeof battingCols)[number]["field"];
 
 function PlayerRow({
@@ -47,6 +49,29 @@ function PlayerRow({
   cols: typeof battingCols;
   existingStat?: PlayerGameStats;
 }) {
+  const initPA = existingStat
+    ? (existingStat.at_bats ?? 0) +
+      (existingStat.walks ?? 0) +
+      (existingStat.hit_by_pitch ?? 0) +
+      (existingStat.sacrifice_flies ?? 0)
+    : 0;
+
+  const [pa, setPA] = useState(initPA);
+  const [fields, setFields] = useState({
+    ab: existingStat?.at_bats ?? 0,
+    bb: existingStat?.walks ?? 0,
+    hbp: existingStat?.hit_by_pitch ?? 0,
+    sf: existingStat?.sacrifice_flies ?? 0,
+  });
+
+  function handleChange(key: string, value: number) {
+    if (paFields.has(key)) {
+      const next = { ...fields, [key]: value };
+      setFields(next);
+      setPA(next.ab + next.bb + next.hbp + next.sf);
+    }
+  }
+
   return (
     <tr className="border-b border-border/30">
       <td className="px-2 py-1 sticky left-0 bg-card z-10">
@@ -59,6 +84,16 @@ function PlayerRow({
           </span>
         </div>
       </td>
+      {/* PA — auto-calculated, read-only */}
+      <td className="px-0.5 py-0.5">
+        <input type="hidden" name={`${player.id}_pa`} value={pa} />
+        <div
+          title="PA = AB + BB + HBP + SF"
+          className="w-full min-w-[42px] rounded-lg border border-amber-500/20 bg-amber-500/5 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-amber-400"
+        >
+          {pa}
+        </div>
+      </td>
       {cols.map((col) => (
         <td key={col.key} className="px-0.5 py-0.5">
           <input
@@ -66,6 +101,11 @@ function PlayerRow({
             name={`${player.id}_${col.key}`}
             defaultValue={existingStat ? existingStat[col.field as StatField] : 0}
             min={0}
+            onChange={
+              paFields.has(col.key)
+                ? (e) => handleChange(col.key, parseInt(e.target.value) || 0)
+                : undefined
+            }
             className="w-full min-w-[42px] rounded-lg border border-border bg-zinc-900 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500 transition-colors"
           />
         </td>
@@ -150,6 +190,12 @@ export function StatEntryTable({
               <th className="px-2 py-1.5 text-left text-xs uppercase tracking-wider text-zinc-500 font-medium sticky left-0 bg-card z-10 min-w-[140px]">
                 Jugador
               </th>
+              <th
+                title="Apariciones al plato (auto: AB+BB+HBP+SF)"
+                className="px-1 py-1.5 text-center text-xs uppercase tracking-wider text-amber-500/70 font-medium min-w-[50px]"
+              >
+                PA
+              </th>
               {battingCols.map((col) => (
                 <th
                   key={col.key}
@@ -175,7 +221,7 @@ export function StatEntryTable({
               <>
                 <tr>
                   <td
-                    colSpan={battingCols.length + 1}
+                    colSpan={battingCols.length + 2}
                     className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest text-zinc-600 font-medium"
                   >
                     — Reservas —

@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BoxScore } from "@/components/games/box-score";
+import { Linescore } from "@/components/games/linescore";
 import { QuickScoreForm } from "@/components/games/quick-score-form";
 import { GameStatusControl } from "@/components/games/game-status-control";
 import { getGame } from "@/lib/queries/games";
-import { getPlayerGameStats } from "@/lib/queries/stats";
+import { getPlayerGameStats, getGameInnings } from "@/lib/queries/stats";
 import { formatGameDate } from "@/lib/utils/format";
+import { isAdmin } from "@/lib/auth";
 import { BarChart3, ClipboardList, MapPin, Pencil, User, Users } from "lucide-react";
 import type { GameWithTeams, PlayerGameStats, Player } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -31,7 +33,11 @@ export default async function JuegoDetailPage({
     notFound();
   }
 
-  const stats = await getPlayerGameStats(id);
+  const [stats, innings, admin] = await Promise.all([
+    getPlayerGameStats(id),
+    getGameInnings(id),
+    isAdmin(),
+  ]);
   const isFinal = game.status === "final";
 
   return (
@@ -40,20 +46,22 @@ export default async function JuegoDetailPage({
         title="Detalle del Juego"
         description={formatGameDate(game.game_date)}
         action={
-          <div className="flex gap-2">
-            <Link href={`/admin/juegos/${id}/editar`}>
-              <Button variant="secondary" size="sm">
-                <Pencil size={14} />
-                Editar
-              </Button>
-            </Link>
-            <Link href={`/admin/juegos/${id}/estadisticas`}>
-              <Button variant="secondary" size="sm">
-                <ClipboardList size={14} />
-                Stats
-              </Button>
-            </Link>
-          </div>
+          admin ? (
+            <div className="flex gap-2">
+              <Link href={`/admin/juegos/${id}/editar`}>
+                <Button variant="secondary" size="sm">
+                  <Pencil size={14} />
+                  Editar
+                </Button>
+              </Link>
+              <Link href={`/admin/juegos/${id}/estadisticas`}>
+                <Button variant="secondary" size="sm">
+                  <ClipboardList size={14} />
+                  Stats
+                </Button>
+              </Link>
+            </div>
+          ) : undefined
         }
       />
 
@@ -61,7 +69,13 @@ export default async function JuegoDetailPage({
       <Card className="mb-4">
         <CardContent className="pt-2">
           <div className="flex items-center justify-between mb-4">
-            <GameStatusControl gameId={id} status={game.status} />
+            {admin ? (
+              <GameStatusControl gameId={id} status={game.status} />
+            ) : (
+              <Badge variant={isFinal ? "default" : "muted"}>
+                {game.status === "scheduled" ? "Programado" : game.status === "in_progress" ? "En Progreso" : game.status === "final" ? "Final" : game.status === "postponed" ? "Pospuesto" : "Cancelado"}
+              </Badge>
+            )}
             {game.location && (
               <span className="text-xs text-muted flex items-center gap-1">
                 <MapPin size={12} />
@@ -115,6 +129,28 @@ export default async function JuegoDetailPage({
         </CardContent>
       </Card>
 
+      {/* Linescore */}
+      {innings.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 size={16} />
+              Línea de Anotación
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Linescore
+              innings={innings}
+              awayTeam={game.away_team}
+              homeTeam={game.home_team}
+              awayScore={game.away_score}
+              homeScore={game.home_score}
+              totalInnings={game.innings}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Lineup */}
       {stats.length > 0 && <LineupSection stats={stats as StatWithPlayer[]} awayTeam={game.away_team} homeTeam={game.home_team} />}
 
@@ -125,7 +161,7 @@ export default async function JuegoDetailPage({
           awayTeam={game.away_team}
           stats={stats as never[]}
         />
-      ) : (
+      ) : admin ? (
         <Card>
           <CardHeader>
             <CardTitle>Marcador Rápido</CardTitle>
@@ -140,7 +176,7 @@ export default async function JuegoDetailPage({
             />
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </>
   );
 }

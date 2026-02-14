@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { formatFullName } from "@/lib/utils/format";
-import { X, UserPlus, ChevronRight } from "lucide-react";
+import { X, UserPlus, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import type { Player } from "@/lib/types";
 
 export interface LineupResult {
@@ -18,31 +18,52 @@ interface LineupSelectorProps {
   onConfirm: (lineup: LineupResult) => void;
 }
 
-type Role = "regular" | "reserva";
-
 export function LineupSelector({
   players,
   teamName,
   teamColor,
   onConfirm,
 }: LineupSelectorProps) {
-  const [roles, setRoles] = useState<Record<string, Role>>({});
+  const [regularIds, setRegularIds] = useState<string[]>([]);
+  const [reserveIds, setReserveIds] = useState<string[]>([]);
 
-  const regulars = players.filter((p) => roles[p.id] === "regular");
-  const reserves = players.filter((p) => roles[p.id] === "reserva");
-  const available = players.filter((p) => !roles[p.id]);
+  const playerMap = new Map(players.map((p) => [p.id, p]));
 
-  function assign(playerId: string, role: Role) {
-    setRoles((prev) => ({ ...prev, [playerId]: role }));
+  const regulars = regularIds.map((id) => playerMap.get(id)!).filter(Boolean);
+  const reserves = reserveIds.map((id) => playerMap.get(id)!).filter(Boolean);
+  const assigned = new Set([...regularIds, ...reserveIds]);
+  const available = players.filter((p) => !assigned.has(p.id));
+
+  function assignRegular(playerId: string) {
+    setRegularIds((prev) => [...prev, playerId]);
+  }
+
+  function assignReserve(playerId: string) {
+    setReserveIds((prev) => [...prev, playerId]);
   }
 
   function remove(playerId: string) {
-    setRoles((prev) => {
-      const next = { ...prev };
-      delete next[playerId];
+    setRegularIds((prev) => prev.filter((id) => id !== playerId));
+    setReserveIds((prev) => prev.filter((id) => id !== playerId));
+  }
+
+  const moveUp = useCallback((index: number) => {
+    if (index <= 0) return;
+    setRegularIds((prev) => {
+      const next = [...prev];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
       return next;
     });
-  }
+  }, []);
+
+  const moveDown = useCallback((index: number) => {
+    setRegularIds((prev) => {
+      if (index >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return next;
+    });
+  }, []);
 
   function handleConfirm() {
     onConfirm({ regulars, reserves });
@@ -90,13 +111,31 @@ export function LineupSelector({
                     </span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => remove(p.id)}
-                  className="text-zinc-500 hover:text-red-400 transition-colors p-0.5"
-                >
-                  <X size={14} />
-                </button>
+                <div className="flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => moveUp(i)}
+                    disabled={i === 0}
+                    className="text-zinc-500 hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors p-0.5"
+                  >
+                    <ChevronUp size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveDown(i)}
+                    disabled={i === regulars.length - 1}
+                    className="text-zinc-500 hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors p-0.5"
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(p.id)}
+                    className="text-zinc-500 hover:text-red-400 transition-colors p-0.5 ml-1"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -173,14 +212,14 @@ export function LineupSelector({
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => assign(p.id, "regular")}
+                    onClick={() => assignRegular(p.id)}
                     className="text-[10px] font-medium px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors"
                   >
                     Regular
                   </button>
                   <button
                     type="button"
-                    onClick={() => assign(p.id, "reserva")}
+                    onClick={() => assignReserve(p.id)}
                     className="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors"
                   >
                     Reserva
@@ -198,11 +237,7 @@ export function LineupSelector({
           <button
             type="button"
             onClick={() => {
-              const newRoles = { ...roles };
-              available.forEach((p) => {
-                newRoles[p.id] = "regular";
-              });
-              setRoles(newRoles);
+              setRegularIds((prev) => [...prev, ...available.map((p) => p.id)]);
             }}
             className="text-[11px] text-amber-500/70 hover:text-amber-500 transition-colors flex items-center gap-1"
           >

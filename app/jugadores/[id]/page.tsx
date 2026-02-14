@@ -11,6 +11,7 @@ import { getPlayer, getPlayerCareerBatting, getPlayerCareerFielding } from "@/li
 import { getPlayerGameLog } from "@/lib/queries/stats";
 import { formatFullName } from "@/lib/utils/format";
 import { DeletePlayerButton } from "@/components/players/delete-player-button";
+import { isAdmin } from "@/lib/auth";
 import { Pencil, BarChart3 } from "lucide-react";
 import type { PlayerWithTeam } from "@/lib/types";
 
@@ -28,10 +29,11 @@ export default async function JugadorDetailPage({
     notFound();
   }
 
-  const [battingStats, fieldingStats, gameLog] = await Promise.all([
+  const [battingStats, fieldingStats, gameLog, admin] = await Promise.all([
     getPlayerCareerBatting(id),
     getPlayerCareerFielding(id),
     getPlayerGameLog(id),
+    isAdmin(),
   ]);
 
   const batting = battingStats[0];
@@ -42,18 +44,20 @@ export default async function JugadorDetailPage({
       <PageHeader
         title={formatFullName(player.first_name, player.last_name)}
         action={
-          <div className="flex items-center gap-2">
-            <Link href={`/admin/jugadores/${id}/editar`}>
-              <Button variant="secondary" size="sm">
-                <Pencil size={14} />
-                Editar
-              </Button>
-            </Link>
-            <DeletePlayerButton
-              playerId={id}
-              playerName={formatFullName(player.first_name, player.last_name)}
-            />
-          </div>
+          admin ? (
+            <div className="flex items-center gap-2">
+              <Link href={`/admin/jugadores/${id}/editar`}>
+                <Button variant="secondary" size="sm">
+                  <Pencil size={14} />
+                  Editar
+                </Button>
+              </Link>
+              <DeletePlayerButton
+                playerId={id}
+                playerName={formatFullName(player.first_name, player.last_name)}
+              />
+            </div>
+          ) : undefined
         }
       />
 

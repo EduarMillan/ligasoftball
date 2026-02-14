@@ -15,6 +15,7 @@ import {
   getTeamFieldingStats,
 } from "@/lib/queries/players";
 import { getStatLabel } from "@/lib/utils/stat-labels";
+import { isAdmin } from "@/lib/auth";
 import { Pencil, Users, BarChart3 } from "lucide-react";
 import type { PlayerCareerBatting, PlayerCareerFielding } from "@/lib/types";
 
@@ -123,10 +124,11 @@ export default async function EquipoDetailPage({
     notFound();
   }
 
-  const [players, battingStats, fieldingStats] = await Promise.all([
+  const [players, battingStats, fieldingStats, admin] = await Promise.all([
     getPlayersByTeam(id),
     getTeamBattingStats(id),
     getTeamFieldingStats(id),
+    isAdmin(),
   ]);
 
   return (
@@ -134,12 +136,14 @@ export default async function EquipoDetailPage({
       <PageHeader
         title={team.name}
         action={
-          <Link href={`/admin/equipos/${id}/editar`}>
-            <Button variant="secondary" size="sm">
-              <Pencil size={14} />
-              Editar
-            </Button>
-          </Link>
+          admin ? (
+            <Link href={`/admin/equipos/${id}/editar`}>
+              <Button variant="secondary" size="sm">
+                <Pencil size={14} />
+                Editar
+              </Button>
+            </Link>
+          ) : undefined
         }
       />
 
@@ -178,23 +182,27 @@ export default async function EquipoDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Roster</CardTitle>
-          <Link href={`/admin/jugadores/nuevo?team=${id}`}>
-            <Button variant="ghost" size="sm">
-              <Users size={14} />
-              Agregar
-            </Button>
-          </Link>
+          {admin && (
+            <Link href={`/admin/jugadores/nuevo?team=${id}`}>
+              <Button variant="ghost" size="sm">
+                <Users size={14} />
+                Agregar
+              </Button>
+            </Link>
+          )}
         </CardHeader>
         <CardContent>
           {players.length === 0 ? (
             <EmptyState
               icon={<Users size={32} />}
               title="Sin jugadores"
-              description="Agrega jugadores a este equipo"
+              description={admin ? "Agrega jugadores a este equipo" : "No hay jugadores registrados"}
               action={
-                <Link href={`/admin/jugadores/nuevo?team=${id}`}>
-                  <Button size="sm">Agregar Jugador</Button>
-                </Link>
+                admin ? (
+                  <Link href={`/admin/jugadores/nuevo?team=${id}`}>
+                    <Button size="sm">Agregar Jugador</Button>
+                  </Link>
+                ) : undefined
               }
             />
           ) : (
