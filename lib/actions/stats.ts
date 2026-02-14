@@ -9,17 +9,22 @@ export async function saveBulkStats(
   gameId: string,
   stats: PlayerGameStatsInsert[]
 ) {
-  const auth = await requireAdmin();
-  if ("error" in auth) return { error: auth.error };
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("player_game_stats")
-    .upsert(stats, { onConflict: "player_id,game_id" });
-  if (error) return { error: "Error al guardar estadísticas." };
-  revalidatePath(`/juegos/${gameId}`);
-  revalidatePath("/jugadores");
-  revalidatePath("/equipos");
-  revalidatePath("/");
+  try {
+    const auth = await requireAdmin();
+    if ("error" in auth) return { error: auth.error };
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("player_game_stats")
+      .upsert(stats, { onConflict: "player_id,game_id" });
+    if (error) return { error: `Error al guardar estadísticas: ${error.message}` };
+    revalidatePath(`/juegos/${gameId}`);
+    revalidatePath("/jugadores");
+    revalidatePath("/equipos");
+    revalidatePath("/");
+    return { success: true };
+  } catch (e) {
+    return { error: `Error inesperado: ${e instanceof Error ? e.message : "desconocido"}` };
+  }
 }
 
 export async function saveLineup(
@@ -28,77 +33,82 @@ export async function saveLineup(
   regulars: { id: string }[],
   reserves: { id: string }[]
 ) {
-  const auth = await requireAdmin();
-  if ("error" in auth) return { error: auth.error };
+  try {
+    const auth = await requireAdmin();
+    if ("error" in auth) return { error: auth.error };
 
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  // Check which players already have stats for this game
-  const { data: existing } = await supabase
-    .from("player_game_stats")
-    .select("player_id")
-    .eq("game_id", gameId)
-    .eq("team_id", teamId);
-
-  const existingIds = new Set((existing ?? []).map((s) => s.player_id));
-
-  // Only insert skeleton records for players that don't have stats yet
-  const newRecords: PlayerGameStatsInsert[] = [];
-
-  for (let i = 0; i < regulars.length; i++) {
-    if (!existingIds.has(regulars[i].id)) {
-      newRecords.push({
-        player_id: regulars[i].id,
-        game_id: gameId,
-        team_id: teamId,
-        is_starter: true,
-        batting_order: i + 1,
-      });
-    }
-  }
-
-  for (const r of reserves) {
-    if (!existingIds.has(r.id)) {
-      newRecords.push({
-        player_id: r.id,
-        game_id: gameId,
-        team_id: teamId,
-        is_starter: false,
-        batting_order: null,
-      });
-    }
-  }
-
-  if (newRecords.length > 0) {
-    const { error } = await supabase
+    // Check which players already have stats for this game
+    const { data: existing } = await supabase
       .from("player_game_stats")
-      .insert(newRecords);
-    if (error) return { error: "Error al guardar lineup." };
-  }
+      .select("player_id")
+      .eq("game_id", gameId)
+      .eq("team_id", teamId);
 
-  // Update is_starter and batting_order for players that already exist
-  for (let i = 0; i < regulars.length; i++) {
-    if (existingIds.has(regulars[i].id)) {
-      await supabase
-        .from("player_game_stats")
-        .update({ is_starter: true, batting_order: i + 1 })
-        .eq("player_id", regulars[i].id)
-        .eq("game_id", gameId);
+    const existingIds = new Set((existing ?? []).map((s) => s.player_id));
+
+    // Only insert skeleton records for players that don't have stats yet
+    const newRecords: PlayerGameStatsInsert[] = [];
+
+    for (let i = 0; i < regulars.length; i++) {
+      if (!existingIds.has(regulars[i].id)) {
+        newRecords.push({
+          player_id: regulars[i].id,
+          game_id: gameId,
+          team_id: teamId,
+          is_starter: true,
+          batting_order: i + 1,
+        });
+      }
     }
-  }
 
-  for (const r of reserves) {
-    if (existingIds.has(r.id)) {
-      await supabase
-        .from("player_game_stats")
-        .update({ is_starter: false, batting_order: null })
-        .eq("player_id", r.id)
-        .eq("game_id", gameId);
+    for (const r of reserves) {
+      if (!existingIds.has(r.id)) {
+        newRecords.push({
+          player_id: r.id,
+          game_id: gameId,
+          team_id: teamId,
+          is_starter: false,
+          batting_order: null,
+        });
+      }
     }
-  }
 
-  revalidatePath(`/admin/juegos/${gameId}/estadisticas`);
-  revalidatePath(`/juegos/${gameId}`);
+    if (newRecords.length > 0) {
+      const { error } = await supabase
+        .from("player_game_stats")
+        .insert(newRecords);
+      if (error) return { error: `Error al guardar lineup: ${error.message}` };
+    }
+
+    // Update is_starter and batting_order for players that already exist
+    for (let i = 0; i < regulars.length; i++) {
+      if (existingIds.has(regulars[i].id)) {
+        await supabase
+          .from("player_game_stats")
+          .update({ is_starter: true, batting_order: i + 1 })
+          .eq("player_id", regulars[i].id)
+          .eq("game_id", gameId);
+      }
+    }
+
+    for (const r of reserves) {
+      if (existingIds.has(r.id)) {
+        await supabase
+          .from("player_game_stats")
+          .update({ is_starter: false, batting_order: null })
+          .eq("player_id", r.id)
+          .eq("game_id", gameId);
+      }
+    }
+
+    revalidatePath(`/admin/juegos/${gameId}/estadisticas`);
+    revalidatePath(`/juegos/${gameId}`);
+    return { success: true };
+  } catch (e) {
+    return { error: `Error inesperado: ${e instanceof Error ? e.message : "desconocido"}` };
+  }
 }
 
 export async function saveGameStats(formData: FormData) {

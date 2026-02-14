@@ -106,7 +106,7 @@ describe("saveGameStats", () => {
     ]);
 
     const result = await saveGameStats(fd);
-    expect(result).toEqual({ error: "Error al guardar estadísticas." });
+    expect(result).toEqual({ error: "Error al guardar estadísticas: DB error" });
   });
 
   it("maps all batting stat fields correctly", async () => {

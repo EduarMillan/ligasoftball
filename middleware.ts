@@ -7,6 +7,10 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request });
   const pathname = request.nextUrl.pathname;
 
+  // Skip auth check for server action requests — they have their own requireAdmin() checks
+  const isServerAction = request.headers.get("next-action") !== null;
+  if (isServerAction) return response;
+
   const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
   const isLoginPage = pathname === "/auth/login";
 
