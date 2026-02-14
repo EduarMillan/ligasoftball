@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { LineupSelector, type LineupResult } from "@/components/games/lineup-selector";
 import { StatEntryTable } from "@/components/games/stat-entry-table";
+import { saveLineup } from "@/lib/actions/stats";
 import { ArrowLeft, Users } from "lucide-react";
 import type { Player, PlayerGameStats, GameWithTeams } from "@/lib/types";
 
@@ -56,6 +57,23 @@ export function StatsPageClient({
   const [homeLineup, setHomeLineup] = useState<LineupResult | null>(
     hasExistingHome ? deriveLineup(homeExisting) : null
   );
+  const [isSaving, startTransition] = useTransition();
+
+  function confirmLineup(
+    teamId: string,
+    lineup: LineupResult,
+    setSide: (l: LineupResult) => void
+  ) {
+    setSide(lineup);
+    startTransition(async () => {
+      await saveLineup(
+        game.id,
+        teamId,
+        lineup.regulars.map((p) => ({ id: p.id })),
+        lineup.reserves.map((p) => ({ id: p.id }))
+      );
+    });
+  }
 
   const bothConfirmed = awayLineup !== null && homeLineup !== null;
 
@@ -139,7 +157,9 @@ export function StatsPageClient({
                 players={awayPlayers}
                 teamName={game.away_team.name}
                 teamColor={game.away_team.primary_color}
-                onConfirm={setAwayLineup}
+                onConfirm={(lineup) =>
+                  confirmLineup(game.away_team_id, lineup, setAwayLineup)
+                }
               />
             )
           ) : (
@@ -183,7 +203,9 @@ export function StatsPageClient({
                 players={homePlayers}
                 teamName={game.home_team.name}
                 teamColor={game.home_team.primary_color}
-                onConfirm={setHomeLineup}
+                onConfirm={(lineup) =>
+                  confirmLineup(game.home_team_id, lineup, setHomeLineup)
+                }
               />
             )
           ) : (
@@ -199,7 +221,8 @@ export function StatsPageClient({
       {/* Continue button */}
       <div className="flex justify-end">
         <Button
-          disabled={!bothConfirmed}
+          disabled={!bothConfirmed || isSaving}
+          loading={isSaving}
           onClick={() => setStep("stats")}
         >
           Continuar a Stats

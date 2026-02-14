@@ -22,6 +22,85 @@ export async function saveBulkStats(
   revalidatePath("/");
 }
 
+export async function saveLineup(
+  gameId: string,
+  teamId: string,
+  regulars: { id: string }[],
+  reserves: { id: string }[]
+) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return { error: auth.error };
+
+  const supabase = await createClient();
+
+  // Check which players already have stats for this game
+  const { data: existing } = await supabase
+    .from("player_game_stats")
+    .select("player_id")
+    .eq("game_id", gameId)
+    .eq("team_id", teamId);
+
+  const existingIds = new Set((existing ?? []).map((s) => s.player_id));
+
+  // Only insert skeleton records for players that don't have stats yet
+  const newRecords: PlayerGameStatsInsert[] = [];
+
+  for (let i = 0; i < regulars.length; i++) {
+    if (!existingIds.has(regulars[i].id)) {
+      newRecords.push({
+        player_id: regulars[i].id,
+        game_id: gameId,
+        team_id: teamId,
+        is_starter: true,
+        batting_order: i + 1,
+      });
+    }
+  }
+
+  for (const r of reserves) {
+    if (!existingIds.has(r.id)) {
+      newRecords.push({
+        player_id: r.id,
+        game_id: gameId,
+        team_id: teamId,
+        is_starter: false,
+        batting_order: null,
+      });
+    }
+  }
+
+  if (newRecords.length > 0) {
+    const { error } = await supabase
+      .from("player_game_stats")
+      .insert(newRecords);
+    if (error) return { error: "Error al guardar lineup." };
+  }
+
+  // Update is_starter and batting_order for players that already exist
+  for (let i = 0; i < regulars.length; i++) {
+    if (existingIds.has(regulars[i].id)) {
+      await supabase
+        .from("player_game_stats")
+        .update({ is_starter: true, batting_order: i + 1 })
+        .eq("player_id", regulars[i].id)
+        .eq("game_id", gameId);
+    }
+  }
+
+  for (const r of reserves) {
+    if (existingIds.has(r.id)) {
+      await supabase
+        .from("player_game_stats")
+        .update({ is_starter: false, batting_order: null })
+        .eq("player_id", r.id)
+        .eq("game_id", gameId);
+    }
+  }
+
+  revalidatePath(`/admin/juegos/${gameId}/estadisticas`);
+  revalidatePath(`/juegos/${gameId}`);
+}
+
 export async function saveGameStats(formData: FormData) {
   const gameId = formData.get("game_id") as string;
   const playerIds = formData.getAll("player_id") as string[];
