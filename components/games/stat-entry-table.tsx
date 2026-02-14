@@ -18,7 +18,7 @@ interface StatEntryTableProps {
 }
 
 const battingCols = [
-  { key: "ab", label: "AB", title: "Turnos al bate", field: "at_bats" as const },
+  { key: "pa", label: "PA", title: "Apariciones al plato", field: "plate_appearances" as const },
   { key: "r", label: "R", title: "Carreras", field: "runs" as const },
   { key: "1b", label: "1B", title: "Sencillos" },
   { key: "2b", label: "2B", title: "Dobles", field: "doubles" as const },
@@ -40,12 +40,12 @@ const fieldingCols = [
 const allCols = [...battingCols, ...fieldingCols];
 const fieldingKeys = new Set(fieldingCols.map((c) => c.key));
 
-// Fields that contribute to PA = AB + BB + SF
-const paFields = new Set(["ab", "bb", "sf"]);
+// Fields that contribute to AB = PA - BB - SF
+const abFields = new Set(["pa", "bb", "sf"]);
 // Fields that contribute to H = 1B + 2B + 3B + HR
 const hFields = new Set(["1b", "2b", "3b", "hr"]);
 // All auto-calc contributing fields
-const autoCalcFields = new Set([...paFields, ...hFields]);
+const autoCalcFields = new Set([...abFields, ...hFields]);
 
 type StatField = (typeof allCols)[number]["field"];
 
@@ -64,18 +64,13 @@ function PlayerRow({
     ? (existingStat.hits ?? 0) - (existingStat.doubles ?? 0) - (existingStat.triples ?? 0) - (existingStat.home_runs ?? 0)
     : 0;
 
-  const initPA = existingStat
-    ? (existingStat.at_bats ?? 0) +
-      (existingStat.walks ?? 0) +
-      (existingStat.sacrifice_flies ?? 0)
-    : 0;
-
+  const initAB = existingStat ? (existingStat.at_bats ?? 0) : 0;
   const initH = existingStat ? (existingStat.hits ?? 0) : 0;
 
-  const [pa, setPA] = useState(initPA);
+  const [ab, setAB] = useState(initAB);
   const [hits, setHits] = useState(initH);
   const [fields, setFields] = useState({
-    ab: existingStat?.at_bats ?? 0,
+    pa: existingStat?.plate_appearances ?? 0,
     bb: existingStat?.walks ?? 0,
     sf: existingStat?.sacrifice_flies ?? 0,
     "1b": Math.max(0, init1B),
@@ -88,8 +83,8 @@ function PlayerRow({
     if (!autoCalcFields.has(key)) return;
     const next = { ...fields, [key]: value };
     setFields(next);
-    if (paFields.has(key)) {
-      setPA(next.ab + next.bb + next.sf);
+    if (abFields.has(key)) {
+      setAB(next.pa - next.bb - next.sf);
     }
     if (hFields.has(key)) {
       setHits(next["1b"] + next["2b"] + next["3b"] + next.hr);
@@ -110,14 +105,14 @@ function PlayerRow({
           </span>
         </div>
       </td>
-      {/* PA — auto-calculated, read-only */}
+      {/* AB — auto-calculated, read-only */}
       <td className="px-0.5 py-0.5">
-        <input type="hidden" name={`${player.id}_pa`} value={pa} />
+        <input type="hidden" name={`${player.id}_ab`} value={ab} />
         <div
-          title="PA = AB + BB + SF"
+          title="AB = PA - BB - SF"
           className="w-full min-w-[42px] rounded-lg border border-amber-500/20 bg-amber-500/5 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-amber-400"
         >
-          {pa}
+          {ab}
         </div>
       </td>
       {/* H — auto-calculated, read-only */}
@@ -241,10 +236,10 @@ export function StatEntryTable({
                 Jugador
               </th>
               <th
-                title="Apariciones al plato (auto: AB+BB+SF)"
+                title="Turnos al bate (auto: PA-BB-SF)"
                 className="px-1 py-1.5 text-center text-xs uppercase tracking-wider text-amber-500/70 font-medium min-w-[50px]"
               >
-                PA
+                AB
               </th>
               <th
                 title="Hits totales (auto: 1B+2B+3B+HR)"

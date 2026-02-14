@@ -271,9 +271,9 @@ describe("StatEntryTable", () => {
     expect(teamInput?.value).toBe("team-1");
   });
 
-  // --- PA auto-calculation tests ---
+  // --- AB auto-calculation tests ---
 
-  it("shows PA as 0 by default", () => {
+  it("shows AB as 0 by default", () => {
     const players = makePlayers(1);
     const lineup = { regulars: [players[0]], reserves: [] };
 
@@ -281,14 +281,14 @@ describe("StatEntryTable", () => {
       <StatEntryTable lineup={lineup} {...baseProps} />
     );
 
-    const paInput = container.querySelector<HTMLInputElement>(
-      'input[name="p1_pa"]'
+    const abInput = container.querySelector<HTMLInputElement>(
+      'input[name="p1_ab"]'
     );
-    expect(paInput?.type).toBe("hidden");
-    expect(paInput?.value).toBe("0");
+    expect(abInput?.type).toBe("hidden");
+    expect(abInput?.value).toBe("0");
   });
 
-  it("auto-calculates PA from AB + BB + SF", () => {
+  it("auto-calculates AB from PA - BB - SF", () => {
     const players = makePlayers(1);
     const lineup = { regulars: [players[0]], reserves: [] };
 
@@ -296,23 +296,23 @@ describe("StatEntryTable", () => {
       <StatEntryTable lineup={lineup} {...baseProps} />
     );
 
-    const abInput = container.querySelector<HTMLInputElement>('input[name="p1_ab"]')!;
+    const paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
     const bbInput = container.querySelector<HTMLInputElement>('input[name="p1_bb"]')!;
     const sfInput = container.querySelector<HTMLInputElement>('input[name="p1_sf"]')!;
 
-    fireEvent.change(abInput, { target: { value: "4" } });
+    fireEvent.change(paInput, { target: { value: "5" } });
     fireEvent.change(bbInput, { target: { value: "1" } });
     fireEvent.change(sfInput, { target: { value: "1" } });
 
-    const paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
-    expect(paInput.value).toBe("6"); // 4 + 1 + 1
+    const abInput = container.querySelector<HTMLInputElement>('input[name="p1_ab"]')!;
+    expect(abInput.value).toBe("3"); // 5 - 1 - 1
 
     // Also check the visible display
-    const paDisplay = container.querySelector('[title="PA = AB + BB + SF"]')!;
-    expect(paDisplay.textContent).toBe("6");
+    const abDisplay = container.querySelector('[title="AB = PA - BB - SF"]')!;
+    expect(abDisplay.textContent).toBe("3");
   });
 
-  it("updates PA when any contributing field changes", () => {
+  it("updates AB when any contributing field changes", () => {
     const players = makePlayers(1);
     const lineup = { regulars: [players[0]], reserves: [] };
 
@@ -320,22 +320,23 @@ describe("StatEntryTable", () => {
       <StatEntryTable lineup={lineup} {...baseProps} />
     );
 
-    const abInput = container.querySelector<HTMLInputElement>('input[name="p1_ab"]')!;
-    fireEvent.change(abInput, { target: { value: "3" } });
+    const paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
+    fireEvent.change(paInput, { target: { value: "4" } });
 
-    let paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
-    expect(paInput.value).toBe("3");
+    let abInput = container.querySelector<HTMLInputElement>('input[name="p1_ab"]')!;
+    expect(abInput.value).toBe("4");
 
     const bbInput = container.querySelector<HTMLInputElement>('input[name="p1_bb"]')!;
-    fireEvent.change(bbInput, { target: { value: "2" } });
+    fireEvent.change(bbInput, { target: { value: "1" } });
 
-    paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
-    expect(paInput.value).toBe("5"); // 3 + 2
+    abInput = container.querySelector<HTMLInputElement>('input[name="p1_ab"]')!;
+    expect(abInput.value).toBe("3"); // 4 - 1
   });
 
-  it("computes PA from existing stats on load", () => {
+  it("computes AB from existing stats on load", () => {
     const players = makePlayers(1);
     const stats = makeStats(players[0], {
+      plate_appearances: 5,
       at_bats: 3,
       walks: 1,
       sacrifice_flies: 1,
@@ -346,11 +347,11 @@ describe("StatEntryTable", () => {
       <StatEntryTable lineup={lineup} {...baseProps} existingStats={[stats]} />
     );
 
-    const paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
-    expect(paInput.value).toBe("5"); // 3 + 1 + 1
+    const abInput = container.querySelector<HTMLInputElement>('input[name="p1_ab"]')!;
+    expect(abInput.value).toBe("3"); // 5 - 1 - 1
   });
 
-  it("PA is not an editable number input", () => {
+  it("AB is not an editable number input", () => {
     const players = makePlayers(1);
     const lineup = { regulars: [players[0]], reserves: [] };
 
@@ -358,15 +359,15 @@ describe("StatEntryTable", () => {
       <StatEntryTable lineup={lineup} {...baseProps} />
     );
 
-    // PA should be a hidden input, not a number input
-    const paNumberInput = container.querySelector<HTMLInputElement>(
-      'input[type="number"][name="p1_pa"]'
+    // AB should be a hidden input, not a number input
+    const abNumberInput = container.querySelector<HTMLInputElement>(
+      'input[type="number"][name="p1_ab"]'
     );
-    expect(paNumberInput).toBeNull();
+    expect(abNumberInput).toBeNull();
 
-    const paHidden = container.querySelector<HTMLInputElement>(
-      'input[type="hidden"][name="p1_pa"]'
+    const abHidden = container.querySelector<HTMLInputElement>(
+      'input[type="hidden"][name="p1_ab"]'
     );
-    expect(paHidden).not.toBeNull();
+    expect(abHidden).not.toBeNull();
   });
 });
