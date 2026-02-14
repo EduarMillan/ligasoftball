@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import type { PlayerGameStatsInsert } from "@/lib/types";
+import type { PlayerGameStatsInsert, GameInningInsert } from "@/lib/types";
 
 export async function saveBulkStats(
   gameId: string,
@@ -160,4 +160,67 @@ export async function saveGameStats(formData: FormData) {
   });
 
   return await saveBulkStats(gameId, stats);
+}
+
+export async function saveInning(
+  gameId: string,
+  teamId: string,
+  inning: number,
+  runs: number,
+  hits: number,
+  errors: number
+) {
+  try {
+    const auth = await requireAdmin();
+    if ("error" in auth) return { error: auth.error };
+
+    const supabase = await createClient();
+    const record: GameInningInsert = {
+      game_id: gameId,
+      team_id: teamId,
+      inning,
+      runs,
+      hits,
+      errors,
+    };
+
+    const { error } = await supabase
+      .from("game_innings")
+      .upsert(record, { onConflict: "game_id,team_id,inning" });
+
+    if (error) return { error: `Error al guardar inning: ${error.message}` };
+
+    revalidatePath(`/juegos/${gameId}`);
+    revalidatePath(`/admin/juegos/${gameId}/estadisticas`);
+    return { success: true };
+  } catch (e) {
+    return { error: `Error inesperado: ${e instanceof Error ? e.message : "desconocido"}` };
+  }
+}
+
+export async function deleteInning(
+  gameId: string,
+  teamId: string,
+  inning: number
+) {
+  try {
+    const auth = await requireAdmin();
+    if ("error" in auth) return { error: auth.error };
+
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("game_innings")
+      .delete()
+      .eq("game_id", gameId)
+      .eq("team_id", teamId)
+      .eq("inning", inning);
+
+    if (error) return { error: `Error al eliminar inning: ${error.message}` };
+
+    revalidatePath(`/juegos/${gameId}`);
+    revalidatePath(`/admin/juegos/${gameId}/estadisticas`);
+    return { success: true };
+  } catch (e) {
+    return { error: `Error inesperado: ${e instanceof Error ? e.message : "desconocido"}` };
+  }
 }

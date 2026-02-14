@@ -133,10 +133,11 @@ function PlayerRow({
       {cols.map((col, i) => {
         const isFielding = fieldingKeys.has(col.key);
         const isFirstFielding = isFielding && !fieldingKeys.has(cols[i - 1]?.key);
+        const field = "field" in col ? (col.field as StatField) : undefined;
         const defaultVal = col.key === "1b"
           ? Math.max(0, init1B)
-          : existingStat && "field" in col
-            ? existingStat[col.field as StatField]
+          : existingStat && field
+            ? existingStat[field] ?? 0
             : 0;
         return (
           <td key={col.key} className={`px-0.5 py-0.5${isFirstFielding ? " pl-1.5 border-l border-emerald-500/30" : ""}`}>
