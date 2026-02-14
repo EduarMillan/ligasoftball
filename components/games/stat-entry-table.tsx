@@ -20,7 +20,7 @@ interface StatEntryTableProps {
 const battingCols = [
   { key: "ab", label: "AB", title: "Turnos al bate", field: "at_bats" as const },
   { key: "r", label: "R", title: "Carreras", field: "runs" as const },
-  { key: "h", label: "H", title: "Hits", field: "hits" as const },
+  { key: "1b", label: "1B", title: "Sencillos" },
   { key: "2b", label: "2B", title: "Dobles", field: "doubles" as const },
   { key: "3b", label: "3B", title: "Triples", field: "triples" as const },
   { key: "hr", label: "HR", title: "Jonrones", field: "home_runs" as const },
@@ -28,53 +28,79 @@ const battingCols = [
   { key: "bb", label: "BB", title: "Bases por bolas", field: "walks" as const },
   { key: "so", label: "SO", title: "Ponches", field: "strikeouts" as const },
   { key: "sb", label: "SB", title: "Bases robadas", field: "stolen_bases" as const },
-  { key: "hbp", label: "HBP", title: "Golpeado por lanzamiento", field: "hit_by_pitch" as const },
   { key: "sf", label: "SF", title: "Sacrifice fly", field: "sacrifice_flies" as const },
+];
+
+const fieldingCols = [
   { key: "po", label: "PO", title: "Putouts", field: "putouts" as const },
   { key: "a", label: "A", title: "Asistencias", field: "assists" as const },
   { key: "e", label: "E", title: "Errores", field: "errors" as const },
 ];
 
-// Fields that contribute to PA = AB + BB + HBP + SF
-const paFields = new Set(["ab", "bb", "hbp", "sf"]);
+const allCols = [...battingCols, ...fieldingCols];
+const fieldingKeys = new Set(fieldingCols.map((c) => c.key));
 
-type StatField = (typeof battingCols)[number]["field"];
+// Fields that contribute to PA = AB + BB + SF
+const paFields = new Set(["ab", "bb", "sf"]);
+// Fields that contribute to H = 1B + 2B + 3B + HR
+const hFields = new Set(["1b", "2b", "3b", "hr"]);
+// All auto-calc contributing fields
+const autoCalcFields = new Set([...paFields, ...hFields]);
+
+type StatField = (typeof allCols)[number]["field"];
 
 function PlayerRow({
   player,
   cols,
   existingStat,
+  rowIndex,
 }: {
   player: Player;
-  cols: typeof battingCols;
+  cols: typeof allCols;
   existingStat?: PlayerGameStats;
+  rowIndex: number;
 }) {
+  const init1B = existingStat
+    ? (existingStat.hits ?? 0) - (existingStat.doubles ?? 0) - (existingStat.triples ?? 0) - (existingStat.home_runs ?? 0)
+    : 0;
+
   const initPA = existingStat
     ? (existingStat.at_bats ?? 0) +
       (existingStat.walks ?? 0) +
-      (existingStat.hit_by_pitch ?? 0) +
       (existingStat.sacrifice_flies ?? 0)
     : 0;
 
+  const initH = existingStat ? (existingStat.hits ?? 0) : 0;
+
   const [pa, setPA] = useState(initPA);
+  const [hits, setHits] = useState(initH);
   const [fields, setFields] = useState({
     ab: existingStat?.at_bats ?? 0,
     bb: existingStat?.walks ?? 0,
-    hbp: existingStat?.hit_by_pitch ?? 0,
     sf: existingStat?.sacrifice_flies ?? 0,
+    "1b": Math.max(0, init1B),
+    "2b": existingStat?.doubles ?? 0,
+    "3b": existingStat?.triples ?? 0,
+    hr: existingStat?.home_runs ?? 0,
   });
 
   function handleChange(key: string, value: number) {
+    if (!autoCalcFields.has(key)) return;
+    const next = { ...fields, [key]: value };
+    setFields(next);
     if (paFields.has(key)) {
-      const next = { ...fields, [key]: value };
-      setFields(next);
-      setPA(next.ab + next.bb + next.hbp + next.sf);
+      setPA(next.ab + next.bb + next.sf);
+    }
+    if (hFields.has(key)) {
+      setHits(next["1b"] + next["2b"] + next["3b"] + next.hr);
     }
   }
 
+  const isEven = rowIndex % 2 === 0;
+
   return (
-    <tr className="border-b border-border/30">
-      <td className="px-2 py-1 sticky left-0 bg-card z-10">
+    <tr className={`border-b border-border/30 ${isEven ? "bg-zinc-800/50" : "bg-zinc-950/50"}`}>
+      <td className={`px-2 py-1 sticky left-0 z-10 ${isEven ? "bg-zinc-800" : "bg-zinc-950"}`}>
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] text-zinc-500 font-mono">
             #{player.jersey_number}
@@ -88,28 +114,51 @@ function PlayerRow({
       <td className="px-0.5 py-0.5">
         <input type="hidden" name={`${player.id}_pa`} value={pa} />
         <div
-          title="PA = AB + BB + HBP + SF"
+          title="PA = AB + BB + SF"
           className="w-full min-w-[42px] rounded-lg border border-amber-500/20 bg-amber-500/5 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-amber-400"
         >
           {pa}
         </div>
       </td>
-      {cols.map((col) => (
-        <td key={col.key} className="px-0.5 py-0.5">
-          <input
-            type="number"
-            name={`${player.id}_${col.key}`}
-            defaultValue={existingStat ? existingStat[col.field as StatField] : 0}
-            min={0}
-            onChange={
-              paFields.has(col.key)
-                ? (e) => handleChange(col.key, parseInt(e.target.value) || 0)
-                : undefined
-            }
-            className="w-full min-w-[42px] rounded-lg border border-border bg-zinc-900 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500 transition-colors"
-          />
-        </td>
-      ))}
+      {/* H — auto-calculated, read-only */}
+      <td className="px-0.5 py-0.5">
+        <input type="hidden" name={`${player.id}_h`} value={hits} />
+        <div
+          title="H = 1B + 2B + 3B + HR"
+          className="w-full min-w-[42px] rounded-lg border border-amber-500/20 bg-amber-500/5 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-amber-400"
+        >
+          {hits}
+        </div>
+      </td>
+      {cols.map((col, i) => {
+        const isFielding = fieldingKeys.has(col.key);
+        const isFirstFielding = isFielding && !fieldingKeys.has(cols[i - 1]?.key);
+        const defaultVal = col.key === "1b"
+          ? Math.max(0, init1B)
+          : existingStat && "field" in col
+            ? existingStat[col.field as StatField]
+            : 0;
+        return (
+          <td key={col.key} className={`px-0.5 py-0.5${isFirstFielding ? " pl-1.5 border-l border-emerald-500/30" : ""}`}>
+            <input
+              type="number"
+              name={`${player.id}_${col.key}`}
+              defaultValue={defaultVal}
+              min={0}
+              onChange={
+                autoCalcFields.has(col.key)
+                  ? (e) => handleChange(col.key, parseInt(e.target.value) || 0)
+                  : undefined
+              }
+              className={`w-full min-w-[42px] rounded-lg border px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 transition-colors ${
+                isFielding
+                  ? "border-emerald-500/30 bg-emerald-500/10 focus:ring-emerald-500/50 focus:border-emerald-500"
+                  : "border-border bg-zinc-900 focus:ring-amber-500/50 focus:border-amber-500"
+              }`}
+            />
+          </td>
+        );
+      })}
     </tr>
   );
 }
@@ -191,29 +240,42 @@ export function StatEntryTable({
                 Jugador
               </th>
               <th
-                title="Apariciones al plato (auto: AB+BB+HBP+SF)"
+                title="Apariciones al plato (auto: AB+BB+SF)"
                 className="px-1 py-1.5 text-center text-xs uppercase tracking-wider text-amber-500/70 font-medium min-w-[50px]"
               >
                 PA
               </th>
-              {battingCols.map((col) => (
-                <th
-                  key={col.key}
-                  title={col.title}
-                  className="px-1 py-1.5 text-center text-xs uppercase tracking-wider text-zinc-500 font-medium min-w-[50px]"
-                >
-                  {col.label}
-                </th>
-              ))}
+              <th
+                title="Hits totales (auto: 1B+2B+3B+HR)"
+                className="px-1 py-1.5 text-center text-xs uppercase tracking-wider text-amber-500/70 font-medium min-w-[50px]"
+              >
+                H
+              </th>
+              {allCols.map((col, i) => {
+                const isFielding = fieldingKeys.has(col.key);
+                const isFirstFielding = isFielding && !fieldingKeys.has(allCols[i - 1]?.key);
+                return (
+                  <th
+                    key={col.key}
+                    title={col.title}
+                    className={`px-1 py-1.5 text-center text-xs uppercase tracking-wider font-medium min-w-[50px] ${
+                      isFielding ? "text-emerald-400" : "text-zinc-500"
+                    }${isFirstFielding ? " pl-1.5 border-l border-emerald-500/30" : ""}`}
+                  >
+                    {col.label}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
-            {regulars.map((player) => (
+            {regulars.map((player, i) => (
               <PlayerRow
                 key={player.id}
                 player={player}
-                cols={battingCols}
+                cols={allCols}
                 existingStat={statsMap.get(player.id)}
+                rowIndex={i}
               />
             ))}
 
@@ -221,18 +283,19 @@ export function StatEntryTable({
               <>
                 <tr>
                   <td
-                    colSpan={battingCols.length + 2}
+                    colSpan={allCols.length + 3}
                     className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest text-zinc-600 font-medium"
                   >
                     — Reservas —
                   </td>
                 </tr>
-                {reserves.map((player) => (
+                {reserves.map((player, i) => (
                   <PlayerRow
                     key={player.id}
                     player={player}
-                    cols={battingCols}
+                    cols={allCols}
                     existingStat={statsMap.get(player.id)}
+                    rowIndex={i}
                   />
                 ))}
               </>

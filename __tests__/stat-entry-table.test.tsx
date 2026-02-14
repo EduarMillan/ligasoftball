@@ -288,7 +288,7 @@ describe("StatEntryTable", () => {
     expect(paInput?.value).toBe("0");
   });
 
-  it("auto-calculates PA from AB + BB + HBP + SF", () => {
+  it("auto-calculates PA from AB + BB + SF", () => {
     const players = makePlayers(1);
     const lineup = { regulars: [players[0]], reserves: [] };
 
@@ -298,19 +298,17 @@ describe("StatEntryTable", () => {
 
     const abInput = container.querySelector<HTMLInputElement>('input[name="p1_ab"]')!;
     const bbInput = container.querySelector<HTMLInputElement>('input[name="p1_bb"]')!;
-    const hbpInput = container.querySelector<HTMLInputElement>('input[name="p1_hbp"]')!;
     const sfInput = container.querySelector<HTMLInputElement>('input[name="p1_sf"]')!;
 
     fireEvent.change(abInput, { target: { value: "4" } });
     fireEvent.change(bbInput, { target: { value: "1" } });
-    fireEvent.change(hbpInput, { target: { value: "1" } });
-    fireEvent.change(sfInput, { target: { value: "0" } });
+    fireEvent.change(sfInput, { target: { value: "1" } });
 
     const paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
-    expect(paInput.value).toBe("6"); // 4 + 1 + 1 + 0
+    expect(paInput.value).toBe("6"); // 4 + 1 + 1
 
     // Also check the visible display
-    const paDisplay = container.querySelector('[title="PA = AB + BB + HBP + SF"]')!;
+    const paDisplay = container.querySelector('[title="PA = AB + BB + SF"]')!;
     expect(paDisplay.textContent).toBe("6");
   });
 
@@ -340,8 +338,7 @@ describe("StatEntryTable", () => {
     const stats = makeStats(players[0], {
       at_bats: 3,
       walks: 1,
-      hit_by_pitch: 1,
-      sacrifice_flies: 0,
+      sacrifice_flies: 1,
     });
     const lineup = { regulars: [players[0]], reserves: [] };
 
@@ -350,7 +347,7 @@ describe("StatEntryTable", () => {
     );
 
     const paInput = container.querySelector<HTMLInputElement>('input[name="p1_pa"]')!;
-    expect(paInput.value).toBe("5"); // 3 + 1 + 1 + 0
+    expect(paInput.value).toBe("5"); // 3 + 1 + 1
   });
 
   it("PA is not an editable number input", () => {
