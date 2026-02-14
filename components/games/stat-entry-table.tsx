@@ -18,23 +18,23 @@ interface StatEntryTableProps {
 }
 
 const battingCols = [
-  { key: "pa", label: "PA", title: "Apariciones al plato", field: "plate_appearances" as const },
-  { key: "r", label: "R", title: "Carreras", field: "runs" as const },
-  { key: "1b", label: "1B", title: "Sencillos" },
-  { key: "2b", label: "2B", title: "Dobles", field: "doubles" as const },
-  { key: "3b", label: "3B", title: "Triples", field: "triples" as const },
-  { key: "hr", label: "HR", title: "Jonrones", field: "home_runs" as const },
-  { key: "rbi", label: "RBI", title: "Carreras impulsadas", field: "rbi" as const },
-  { key: "bb", label: "BB", title: "Bases por bolas", field: "walks" as const },
-  { key: "so", label: "SO", title: "Ponches", field: "strikeouts" as const },
-  { key: "sb", label: "SB", title: "Bases robadas", field: "stolen_bases" as const },
-  { key: "sf", label: "SF", title: "Sacrifice fly", field: "sacrifice_flies" as const },
+  { key: "pa", label: "PA", desc: "Turnos", field: "plate_appearances" as const },
+  { key: "1b", label: "1B", desc: "Sencillos" },
+  { key: "2b", label: "2B", desc: "Dobles", field: "doubles" as const },
+  { key: "3b", label: "3B", desc: "Triples", field: "triples" as const },
+  { key: "hr", label: "HR", desc: "Jonrones", field: "home_runs" as const },
+  { key: "r", label: "R", desc: "Carreras", field: "runs" as const },
+  { key: "rbi", label: "RBI", desc: "Impulsadas", field: "rbi" as const },
+  { key: "bb", label: "BB", desc: "Boletos", field: "walks" as const },
+  { key: "so", label: "SO", desc: "Ponches", field: "strikeouts" as const },
+  { key: "sb", label: "SB", desc: "Robadas", field: "stolen_bases" as const },
+  { key: "sf", label: "SF", desc: "Sacrificio", field: "sacrifice_flies" as const },
 ];
 
 const fieldingCols = [
-  { key: "po", label: "PO", title: "Putouts", field: "putouts" as const },
-  { key: "a", label: "A", title: "Asistencias", field: "assists" as const },
-  { key: "e", label: "E", title: "Errores", field: "errors" as const },
+  { key: "po", label: "PO", desc: "Putouts", field: "putouts" as const },
+  { key: "a", label: "A", desc: "Asist.", field: "assists" as const },
+  { key: "e", label: "E", desc: "Errores", field: "errors" as const },
 ];
 
 const allCols = [...battingCols, ...fieldingCols];
@@ -232,20 +232,20 @@ export function StatEntryTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-2 py-1.5 text-left text-xs uppercase tracking-wider text-zinc-500 font-medium sticky left-0 bg-card z-10 min-w-[140px]">
+              <th className="px-2 py-1 text-left text-xs uppercase tracking-wider text-zinc-500 font-medium sticky left-0 bg-card z-10 min-w-[140px] align-bottom">
                 Jugador
               </th>
-              <th
-                title="Turnos al bate (auto: PA-BB-SF)"
-                className="px-1 py-1.5 text-center text-xs uppercase tracking-wider text-amber-500/70 font-medium min-w-[50px]"
-              >
-                AB
+              <th className="px-1 py-1 text-center min-w-[50px]">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[9px] text-amber-500/50 leading-tight">Al bate</span>
+                  <span className="text-xs uppercase tracking-wider text-amber-500/70 font-medium">AB</span>
+                </div>
               </th>
-              <th
-                title="Hits totales (auto: 1B+2B+3B+HR)"
-                className="px-1 py-1.5 text-center text-xs uppercase tracking-wider text-amber-500/70 font-medium min-w-[50px]"
-              >
-                H
+              <th className="px-1 py-1 text-center min-w-[50px]">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[9px] text-amber-500/50 leading-tight">Hits</span>
+                  <span className="text-xs uppercase tracking-wider text-amber-500/70 font-medium">H</span>
+                </div>
               </th>
               {allCols.map((col, i) => {
                 const isFielding = fieldingKeys.has(col.key);
@@ -253,12 +253,18 @@ export function StatEntryTable({
                 return (
                   <th
                     key={col.key}
-                    title={col.title}
-                    className={`px-1 py-1.5 text-center text-xs uppercase tracking-wider font-medium min-w-[50px] ${
-                      isFielding ? "text-emerald-400" : "text-zinc-500"
-                    }${isFirstFielding ? " pl-1.5 border-l border-emerald-500/30" : ""}`}
+                    className={`px-1 py-1 text-center min-w-[50px] ${
+                      isFirstFielding ? "pl-1.5 border-l border-emerald-500/30" : ""
+                    }`}
                   >
-                    {col.label}
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className={`text-[9px] leading-tight ${isFielding ? "text-emerald-400/50" : "text-zinc-600"}`}>
+                        {col.desc}
+                      </span>
+                      <span className={`text-xs uppercase tracking-wider font-medium ${isFielding ? "text-emerald-400" : "text-zinc-500"}`}>
+                        {col.label}
+                      </span>
+                    </div>
                   </th>
                 );
               })}
