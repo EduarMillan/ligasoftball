@@ -36,8 +36,11 @@ export function Linescore({
   // Totals
   const awayTotalH = inningNums.reduce((s, n) => s + (awayInnings.get(n)?.hits ?? 0), 0);
   const homeTotalH = inningNums.reduce((s, n) => s + (homeInnings.get(n)?.hits ?? 0), 0);
-  const awayTotalE = inningNums.reduce((s, n) => s + (awayInnings.get(n)?.errors ?? 0), 0);
-  const homeTotalE = inningNums.reduce((s, n) => s + (homeInnings.get(n)?.errors ?? 0), 0);
+  // E convention: each entry stores the FIELDING team's errors during that half-inning.
+  // Away entries hold home's errors (during top), home entries hold away's errors (during bottom).
+  // Swap so each row displays that team's OWN errors.
+  const awayOwnErrors = inningNums.reduce((s, n) => s + (homeInnings.get(n)?.errors ?? 0), 0);
+  const homeOwnErrors = inningNums.reduce((s, n) => s + (awayInnings.get(n)?.errors ?? 0), 0);
 
   const thClass =
     "px-2 py-1.5 text-center text-[10px] uppercase tracking-wider text-zinc-500 font-medium";
@@ -86,7 +89,7 @@ export function Linescore({
               {awayScore ?? 0}
             </td>
             <td className={cn(tdClass, "text-zinc-300")}>{awayTotalH}</td>
-            <td className={cn(tdClass, "text-zinc-300")}>{awayTotalE}</td>
+            <td className={cn(tdClass, "text-zinc-300")}>{awayOwnErrors}</td>
           </tr>
 
           {/* Home row */}
@@ -112,7 +115,7 @@ export function Linescore({
               {homeScore ?? 0}
             </td>
             <td className={cn(tdClass, "text-zinc-300")}>{homeTotalH}</td>
-            <td className={cn(tdClass, "text-zinc-300")}>{homeTotalE}</td>
+            <td className={cn(tdClass, "text-zinc-300")}>{homeOwnErrors}</td>
           </tr>
         </tbody>
       </table>

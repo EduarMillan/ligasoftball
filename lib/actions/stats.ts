@@ -5,6 +5,118 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import type { PlayerGameStatsInsert, GameInningInsert } from "@/lib/types";
 
+/**
+ * Auto-calculate linescore (game_innings) from player stats.
+ * Uses POs to determine completed half-innings, then derives R/H/E
+ * for each inning by subtracting previously recorded innings from totals.
+ *
+ * Convention: game_innings entry for a team stores that team's offensive
+ * R and H, plus the fielding team's E for that half-inning.
+ */
+async function autoCalculateLinescore(gameId: string) {
+  const supabase = await createClient();
+
+  // Get game to know home/away teams
+  const { data: game } = await supabase
+    .from("games")
+    .select("home_team_id, away_team_id")
+    .eq("id", gameId)
+    .single();
+  if (!game) return;
+
+  // Get all player stats for this game
+  const { data: allStats } = await supabase
+    .from("player_game_stats")
+    .select("team_id, runs, hits, putouts, errors")
+    .eq("game_id", gameId);
+  if (!allStats) return;
+
+  // Sum stats per team
+  const sumTeam = (teamId: string) => {
+    const stats = allStats.filter((s) => s.team_id === teamId);
+    return {
+      runs: stats.reduce((s, st) => s + (st.runs ?? 0), 0),
+      hits: stats.reduce((s, st) => s + (st.hits ?? 0), 0),
+      putouts: stats.reduce((s, st) => s + (st.putouts ?? 0), 0),
+      errors: stats.reduce((s, st) => s + (st.errors ?? 0), 0),
+    };
+  };
+
+  const awayTotals = sumTeam(game.away_team_id);
+  const homeTotals = sumTeam(game.home_team_id);
+
+  // Home POs = outs recorded by home defense during top halves (away batting)
+  // Away POs = outs recorded by away defense during bottom halves (home batting)
+  const completedTopHalves = Math.floor(homeTotals.putouts / 3);
+  const completedBottomHalves = Math.floor(awayTotals.putouts / 3);
+
+  if (completedTopHalves === 0 && completedBottomHalves === 0) return;
+
+  // Get existing game innings
+  const { data: existingInnings } = await supabase
+    .from("game_innings")
+    .select("*")
+    .eq("game_id", gameId)
+    .order("inning");
+
+  const existing = existingInnings ?? [];
+  const existingAway = existing.filter((i) => i.team_id === game.away_team_id);
+  const existingHome = existing.filter((i) => i.team_id === game.home_team_id);
+
+  const toUpsert: GameInningInsert[] = [];
+
+  // Away team's latest completed inning (top halves)
+  if (completedTopHalves > 0) {
+    const latestAway = existingAway.find((i) => i.inning === completedTopHalves);
+    // Only calculate if: inning is new, or was created empty (fielding saved before batting)
+    const shouldCalcAway = !latestAway || (latestAway.runs === 0 && latestAway.hits === 0);
+
+    if (shouldCalcAway) {
+      const prevInnings = existingAway.filter((i) => i.inning < completedTopHalves);
+      const prevR = prevInnings.reduce((s, i) => s + i.runs, 0);
+      const prevH = prevInnings.reduce((s, i) => s + i.hits, 0);
+      const prevE = prevInnings.reduce((s, i) => s + i.errors, 0);
+
+      toUpsert.push({
+        game_id: gameId,
+        team_id: game.away_team_id,
+        inning: completedTopHalves,
+        runs: Math.max(0, awayTotals.runs - prevR),
+        hits: Math.max(0, awayTotals.hits - prevH),
+        errors: Math.max(0, homeTotals.errors - prevE),
+      });
+    }
+  }
+
+  // Home team's latest completed inning (bottom halves)
+  if (completedBottomHalves > 0) {
+    const latestHome = existingHome.find((i) => i.inning === completedBottomHalves);
+    const shouldCalcHome = !latestHome || (latestHome.runs === 0 && latestHome.hits === 0);
+
+    if (shouldCalcHome) {
+      const prevInnings = existingHome.filter((i) => i.inning < completedBottomHalves);
+      const prevR = prevInnings.reduce((s, i) => s + i.runs, 0);
+      const prevH = prevInnings.reduce((s, i) => s + i.hits, 0);
+      const prevE = prevInnings.reduce((s, i) => s + i.errors, 0);
+
+      toUpsert.push({
+        game_id: gameId,
+        team_id: game.home_team_id,
+        inning: completedBottomHalves,
+        runs: Math.max(0, homeTotals.runs - prevR),
+        hits: Math.max(0, homeTotals.hits - prevH),
+        errors: Math.max(0, awayTotals.errors - prevE),
+      });
+    }
+  }
+
+  if (toUpsert.length > 0) {
+    await supabase
+      .from("game_innings")
+      .upsert(toUpsert, { onConflict: "game_id,team_id,inning" });
+  }
+}
+
 export async function saveBulkStats(
   gameId: string,
   stats: PlayerGameStatsInsert[]
@@ -17,7 +129,12 @@ export async function saveBulkStats(
       .from("player_game_stats")
       .upsert(stats, { onConflict: "player_id,game_id" });
     if (error) return { error: `Error al guardar estadísticas: ${error.message}` };
+
+    // Auto-calculate linescore from POs
+    await autoCalculateLinescore(gameId);
+
     revalidatePath(`/juegos/${gameId}`);
+    revalidatePath(`/admin/juegos/${gameId}/estadisticas`);
     revalidatePath("/jugadores");
     revalidatePath("/equipos");
     revalidatePath("/");

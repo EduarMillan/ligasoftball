@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Linescore } from "@/components/games/linescore";
@@ -16,6 +16,12 @@ interface InningEntryFormProps {
 
 export function InningEntryForm({ game, innings: initialInnings }: InningEntryFormProps) {
   const [innings, setInnings] = useState(initialInnings);
+
+  // Sync local state when server re-renders with fresh data (e.g. after auto-linescore)
+  useEffect(() => {
+    setInnings(initialInnings);
+  }, [initialInnings]);
+
   const [inning, setInning] = useState(() => {
     const max = initialInnings.reduce((m, i) => Math.max(m, i.inning), 0);
     return max > 0 ? max : 1;
