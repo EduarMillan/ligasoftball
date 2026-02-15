@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import type { PlayerGameStatsInsert, GameInningInsert } from "@/lib/types";
+import type { PlayerGameStatsInsert, GameInningInsert, GameInning } from "@/lib/types";
 
 /**
  * Auto-calculate linescore (game_innings) from player stats.
@@ -59,7 +59,7 @@ async function autoCalculateLinescore(gameId: string) {
     .eq("game_id", gameId)
     .order("inning");
 
-  const existing = existingInnings ?? [];
+  const existing = (existingInnings ?? []) as GameInning[];
   const existingAway = existing.filter((i) => i.team_id === game.away_team_id);
   const existingHome = existing.filter((i) => i.team_id === game.home_team_id);
 
