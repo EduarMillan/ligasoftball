@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
+import { Medal } from "lucide-react";
 
 interface LeaderEntry {
   rank: number;
@@ -11,37 +12,72 @@ interface LeaderEntry {
 
 interface LeaderCardProps {
   title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
   entries: LeaderEntry[];
   className?: string;
 }
 
-export function LeaderCard({ title, entries, className }: LeaderCardProps) {
+const MEDAL_COLORS: Record<number, string> = {
+  1: "text-amber-400",
+  2: "text-zinc-300",
+  3: "text-amber-700",
+};
+
+export function LeaderCard({ title, subtitle, icon, entries, className }: LeaderCardProps) {
   return (
-    <Card className={className}>
+    <Card className={cn("glass-card border-gradient", className)}>
       <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
+        <div className="flex items-center gap-2">
+          {icon}
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            {subtitle && (
+              <p className="text-xs text-muted mt-0.5">{subtitle}</p>
+            )}
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1">
         {entries.map((entry) => (
           <div
             key={`${entry.name}-${entry.rank}`}
-            className="flex items-center gap-3"
+            className={cn(
+              "flex items-center gap-3 px-2 py-1.5 rounded-lg transition-colors",
+              entry.rank === 1 && "bg-amber-500/5"
+            )}
           >
-            <span
-              className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                entry.rank === 1
-                  ? "bg-amber-500/20 text-amber-400"
-                  : "bg-zinc-800 text-zinc-500"
-              )}
-            >
-              {entry.rank}
-            </span>
+            {entry.rank <= 3 ? (
+              <span
+                className={cn(
+                  "w-6 h-6 flex items-center justify-center",
+                  entry.rank === 1 && "glow-amber rounded-full"
+                )}
+              >
+                <Medal size={16} className={MEDAL_COLORS[entry.rank]} />
+              </span>
+            ) : (
+              <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-zinc-800 text-zinc-500">
+                {entry.rank}
+              </span>
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{entry.name}</p>
+              <p
+                className={cn(
+                  "text-sm font-medium truncate",
+                  entry.rank === 1 && "text-amber-50"
+                )}
+              >
+                {entry.name}
+              </p>
               <p className="text-xs text-muted">{entry.team}</p>
             </div>
-            <span className="text-lg font-bold font-mono tabular-nums">
+            <span
+              className={cn(
+                "text-lg font-bold font-mono tabular-nums",
+                entry.rank === 1 && "text-amber-400"
+              )}
+            >
               {entry.value}
             </span>
           </div>
