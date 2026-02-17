@@ -83,6 +83,7 @@ export async function getHomeRunLeaders(
   let query = supabase
     .from("season_batting_leaders")
     .select("*")
+    .gt("hr", 0)
     .order("hr", { ascending: false })
     .limit(limit);
 

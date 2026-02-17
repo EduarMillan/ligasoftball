@@ -1,6 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
-import { Medal } from "lucide-react";
+import { Medal, ChevronDown, ChevronUp } from "lucide-react";
 
 interface LeaderEntry {
   rank: number;
@@ -16,6 +19,7 @@ interface LeaderCardProps {
   icon?: React.ReactNode;
   entries: LeaderEntry[];
   className?: string;
+  defaultVisible?: number;
 }
 
 const MEDAL_COLORS: Record<number, string> = {
@@ -24,7 +28,18 @@ const MEDAL_COLORS: Record<number, string> = {
   3: "text-amber-700",
 };
 
-export function LeaderCard({ title, subtitle, icon, entries, className }: LeaderCardProps) {
+export function LeaderCard({
+  title,
+  subtitle,
+  icon,
+  entries,
+  className,
+  defaultVisible = 5,
+}: LeaderCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const hasMore = entries.length > defaultVisible;
+  const visible = expanded ? entries : entries.slice(0, defaultVisible);
+
   return (
     <Card className={cn("glass-card border-gradient", className)}>
       <CardHeader>
@@ -39,7 +54,7 @@ export function LeaderCard({ title, subtitle, icon, entries, className }: Leader
         </div>
       </CardHeader>
       <CardContent className="space-y-1">
-        {entries.map((entry) => (
+        {visible.map((entry) => (
           <div
             key={`${entry.name}-${entry.rank}`}
             className={cn(
@@ -82,6 +97,23 @@ export function LeaderCard({ title, subtitle, icon, entries, className }: Leader
             </span>
           </div>
         ))}
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="w-full flex items-center justify-center gap-1 text-xs text-amber-500 hover:text-amber-400 transition-colors py-2 mt-1"
+          >
+            {expanded ? (
+              <>
+                Ver menos <ChevronUp size={14} />
+              </>
+            ) : (
+              <>
+                Ver más <ChevronDown size={14} />
+              </>
+            )}
+          </button>
+        )}
       </CardContent>
     </Card>
   );

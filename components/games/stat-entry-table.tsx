@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import type { Player, PlayerGameStats } from "@/lib/types";
 import { formatFullName } from "@/lib/utils/format";
 import { saveGameStats } from "@/lib/actions/stats";
 import type { LineupResult } from "@/components/games/lineup-selector";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface StatEntryTableProps {
   lineup: LineupResult;
@@ -19,22 +20,22 @@ interface StatEntryTableProps {
 
 const battingCols = [
   { key: "pa", label: "PA", desc: "Turnos", field: "plate_appearances" as const },
-  { key: "1b", label: "1B", desc: "Sencillos" },
-  { key: "2b", label: "2B", desc: "Dobles", field: "doubles" as const },
-  { key: "3b", label: "3B", desc: "Triples", field: "triples" as const },
-  { key: "hr", label: "HR", desc: "Jonrones", field: "home_runs" as const },
-  { key: "r", label: "R", desc: "Carreras", field: "runs" as const },
-  { key: "rbi", label: "RBI", desc: "Impulsadas", field: "rbi" as const },
-  { key: "bb", label: "BB", desc: "Boletos", field: "walks" as const },
-  { key: "so", label: "SO", desc: "Ponches", field: "strikeouts" as const },
-  { key: "sb", label: "SB", desc: "Robadas", field: "stolen_bases" as const },
-  { key: "sf", label: "SF", desc: "Sacrificio", field: "sacrifice_flies" as const },
+  { key: "1b", label: "1B", desc: "1B" },
+  { key: "2b", label: "2B", desc: "2B", field: "doubles" as const },
+  { key: "3b", label: "3B", desc: "3B", field: "triples" as const },
+  { key: "hr", label: "HR", desc: "HR", field: "home_runs" as const },
+  { key: "r", label: "R", desc: "Car.", field: "runs" as const },
+  { key: "rbi", label: "CI", desc: "CI", field: "rbi" as const },
+  { key: "bb", label: "BB", desc: "BB", field: "walks" as const },
+  { key: "so", label: "SO", desc: "SO", field: "strikeouts" as const },
+  { key: "sb", label: "SB", desc: "SB", field: "stolen_bases" as const },
+  { key: "sf", label: "SF", desc: "SF", field: "sacrifice_flies" as const },
 ];
 
 const fieldingCols = [
-  { key: "po", label: "PO", desc: "Putouts", field: "putouts" as const },
-  { key: "a", label: "A", desc: "Asist.", field: "assists" as const },
-  { key: "e", label: "E", desc: "Errores", field: "errors" as const },
+  { key: "po", label: "PO", desc: "PO", field: "putouts" as const },
+  { key: "a", label: "A", desc: "A", field: "assists" as const },
+  { key: "e", label: "E", desc: "E", field: "errors" as const },
 ];
 
 const allCols = [...battingCols, ...fieldingCols];
@@ -54,11 +55,19 @@ function PlayerRow({
   cols,
   existingStat,
   rowIndex,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
 }: {
   player: Player;
   cols: typeof allCols;
   existingStat?: PlayerGameStats;
   rowIndex: number;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }) {
   const init1B = existingStat
     ? (existingStat.hits ?? 0) - (existingStat.doubles ?? 0) - (existingStat.triples ?? 0) - (existingStat.home_runs ?? 0)
@@ -95,8 +104,28 @@ function PlayerRow({
 
   return (
     <tr className={`border-b border-border/30 ${isEven ? "bg-zinc-800/50" : "bg-zinc-950/50"}`}>
-      <td className={`px-2 py-1 sticky left-0 z-10 ${isEven ? "bg-zinc-800" : "bg-zinc-950"}`}>
-        <div className="flex items-center gap-1.5">
+      <td className={`px-1 py-0.5 sticky left-0 z-10 ${isEven ? "bg-zinc-800" : "bg-zinc-950"}`}>
+        <div className="flex items-center gap-0.5">
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={!canMoveUp}
+              className="text-zinc-500 hover:text-amber-400 disabled:text-zinc-800 disabled:cursor-default transition-colors p-0 leading-none"
+              title="Subir"
+            >
+              <ArrowUp size={12} />
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={!canMoveDown}
+              className="text-zinc-500 hover:text-amber-400 disabled:text-zinc-800 disabled:cursor-default transition-colors p-0 leading-none"
+              title="Bajar"
+            >
+              <ArrowDown size={12} />
+            </button>
+          </div>
           <span className="text-[10px] text-zinc-500 font-mono">
             #{player.jersey_number}
           </span>
@@ -106,21 +135,21 @@ function PlayerRow({
         </div>
       </td>
       {/* AB — auto-calculated, read-only */}
-      <td className="px-0.5 py-0.5">
+      <td className="px-0 py-0.5">
         <input type="hidden" name={`${player.id}_ab`} value={ab} />
         <div
           title="AB = PA - BB - SF"
-          className="w-full min-w-[42px] rounded-lg border border-amber-500/20 bg-amber-500/5 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-amber-400"
+          className="w-full rounded border border-amber-500/20 bg-amber-500/5 px-0.5 py-1 text-center text-xs font-mono tabular-nums text-amber-400"
         >
           {ab}
         </div>
       </td>
       {/* H — auto-calculated, read-only */}
-      <td className="px-0.5 py-0.5">
+      <td className="px-0 py-0.5">
         <input type="hidden" name={`${player.id}_h`} value={hits} />
         <div
           title="H = 1B + 2B + 3B + HR"
-          className="w-full min-w-[42px] rounded-lg border border-amber-500/20 bg-amber-500/5 px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-amber-400"
+          className="w-full rounded border border-amber-500/20 bg-amber-500/5 px-0.5 py-1 text-center text-xs font-mono tabular-nums text-amber-400"
         >
           {hits}
         </div>
@@ -135,7 +164,7 @@ function PlayerRow({
             ? existingStat[field] ?? 0
             : 0;
         return (
-          <td key={col.key} className={`px-0.5 py-0.5${isFirstFielding ? " pl-1.5 border-l border-emerald-500/30" : ""}`}>
+          <td key={col.key} className={`px-0 py-0.5${isFirstFielding ? " pl-0.5 border-l border-emerald-500/30" : ""}`}>
             <input
               type="number"
               name={`${player.id}_${col.key}`}
@@ -146,7 +175,7 @@ function PlayerRow({
                   ? (e) => handleChange(col.key, parseInt(e.target.value) || 0)
                   : undefined
               }
-              className={`w-full min-w-[42px] rounded-lg border px-1.5 py-1.5 text-center text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 transition-colors ${
+              className={`w-full rounded border px-0.5 py-1 text-center text-xs font-mono tabular-nums text-foreground focus:outline-none focus:ring-1 transition-colors ${
                 isFielding
                   ? "border-emerald-500/30 bg-emerald-500/10 focus:ring-emerald-500/50 focus:border-emerald-500"
                   : "border-border bg-zinc-900 focus:ring-amber-500/50 focus:border-amber-500"
@@ -160,7 +189,7 @@ function PlayerRow({
 }
 
 export function StatEntryTable({
-  lineup,
+  lineup: initialLineup,
   gameId,
   teamId,
   teamName,
@@ -168,6 +197,7 @@ export function StatEntryTable({
   existingStats = [],
 }: StatEntryTableProps) {
   const [saved, setSaved] = useState(false);
+  const [lineupState, setLineupState] = useState(initialLineup);
 
   const [state, formAction, isPending] = useActionState(
     async (_prev: unknown, formData: FormData) => {
@@ -181,10 +211,60 @@ export function StatEntryTable({
     null
   );
 
-  const { regulars, reserves } = lineup;
+  const { regulars, reserves } = lineupState;
   const allPlayers = [...regulars, ...reserves];
 
   const statsMap = new Map(existingStats.map((s) => [s.player_id, s]));
+
+  const moveRegularUp = useCallback((index: number) => {
+    if (index <= 0) return;
+    setLineupState((prev) => {
+      const next = [...prev.regulars];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      return { ...prev, regulars: next };
+    });
+  }, []);
+
+  const moveRegularDown = useCallback((index: number) => {
+    setLineupState((prev) => {
+      // Last regular → move to first reserve
+      if (index === prev.regulars.length - 1) {
+        const player = prev.regulars[index];
+        return {
+          regulars: prev.regulars.slice(0, index),
+          reserves: [player, ...prev.reserves],
+        };
+      }
+      const next = [...prev.regulars];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return { ...prev, regulars: next };
+    });
+  }, []);
+
+  const moveReserveUp = useCallback((index: number) => {
+    setLineupState((prev) => {
+      // First reserve → move to last regular
+      if (index === 0) {
+        const player = prev.reserves[0];
+        return {
+          regulars: [...prev.regulars, player],
+          reserves: prev.reserves.slice(1),
+        };
+      }
+      const next = [...prev.reserves];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      return { ...prev, reserves: next };
+    });
+  }, []);
+
+  const moveReserveDown = useCallback((index: number) => {
+    setLineupState((prev) => {
+      if (index >= prev.reserves.length - 1) return prev;
+      const next = [...prev.reserves];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return { ...prev, reserves: next };
+    });
+  }, []);
 
   return (
     <form
@@ -236,23 +316,17 @@ export function StatEntryTable({
       </div>
 
       <div className="overflow-x-auto -mx-4 px-4">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" style={{ tableLayout: "auto" }}>
           <thead>
             <tr className="border-b border-border">
-              <th className="px-2 py-1 text-left text-xs uppercase tracking-wider text-zinc-500 font-medium sticky left-0 bg-card z-10 min-w-[140px] align-bottom">
+              <th className="px-1 py-1 text-left text-xs uppercase tracking-wider text-zinc-500 font-medium sticky left-0 bg-card z-10 whitespace-nowrap align-bottom">
                 Jugador
               </th>
-              <th className="px-1 py-1 text-center min-w-[50px]">
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[9px] text-amber-500/50 leading-tight">Al bate</span>
-                  <span className="text-xs uppercase tracking-wider text-amber-500/70 font-medium">AB</span>
-                </div>
+              <th className="px-0 py-1 text-center">
+                <span className="text-[10px] uppercase tracking-wider text-amber-500/70 font-medium">AB</span>
               </th>
-              <th className="px-1 py-1 text-center min-w-[50px]">
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[9px] text-amber-500/50 leading-tight">Hits</span>
-                  <span className="text-xs uppercase tracking-wider text-amber-500/70 font-medium">H</span>
-                </div>
+              <th className="px-0 py-1 text-center">
+                <span className="text-[10px] uppercase tracking-wider text-amber-500/70 font-medium">H</span>
               </th>
               {allCols.map((col, i) => {
                 const isFielding = fieldingKeys.has(col.key);
@@ -260,18 +334,13 @@ export function StatEntryTable({
                 return (
                   <th
                     key={col.key}
-                    className={`px-1 py-1 text-center min-w-[50px] ${
-                      isFirstFielding ? "pl-1.5 border-l border-emerald-500/30" : ""
+                    className={`px-0 py-1 text-center ${
+                      isFirstFielding ? "pl-0.5 border-l border-emerald-500/30" : ""
                     }`}
                   >
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className={`text-[9px] leading-tight ${isFielding ? "text-emerald-400/50" : "text-zinc-600"}`}>
-                        {col.desc}
-                      </span>
-                      <span className={`text-xs uppercase tracking-wider font-medium ${isFielding ? "text-emerald-400" : "text-zinc-500"}`}>
-                        {col.label}
-                      </span>
-                    </div>
+                    <span className={`text-[10px] uppercase tracking-wider font-medium ${isFielding ? "text-emerald-400" : "text-zinc-500"}`}>
+                      {col.label}
+                    </span>
                   </th>
                 );
               })}
@@ -285,6 +354,10 @@ export function StatEntryTable({
                 cols={allCols}
                 existingStat={statsMap.get(player.id)}
                 rowIndex={i}
+                onMoveUp={() => moveRegularUp(i)}
+                onMoveDown={() => moveRegularDown(i)}
+                canMoveUp={i > 0}
+                canMoveDown={true}
               />
             ))}
 
@@ -293,7 +366,7 @@ export function StatEntryTable({
                 <tr>
                   <td
                     colSpan={allCols.length + 3}
-                    className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest text-zinc-600 font-medium"
+                    className="px-2 py-1 text-center text-[10px] uppercase tracking-widest text-zinc-600 font-medium"
                   >
                     — Reservas —
                   </td>
@@ -305,6 +378,10 @@ export function StatEntryTable({
                     cols={allCols}
                     existingStat={statsMap.get(player.id)}
                     rowIndex={i}
+                    onMoveUp={() => moveReserveUp(i)}
+                    onMoveDown={() => moveReserveDown(i)}
+                    canMoveUp={true}
+                    canMoveDown={i < reserves.length - 1}
                   />
                 ))}
               </>

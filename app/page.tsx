@@ -18,9 +18,9 @@ export default async function DashboardPage() {
       getTeamStandings().catch(() => [] as TeamStanding[]),
       getRecentGames(4).catch(() => []) as Promise<GameWithTeams[]>,
       getUpcomingGames(4).catch(() => []) as Promise<GameWithTeams[]>,
-      getBattingLeaders(undefined, 5).catch(() => []),
-      getHomeRunLeaders(undefined, 5).catch(() => []),
-      getStolenBaseLeaders(undefined, 5).catch(() => []),
+      getBattingLeaders(undefined, 20).catch(() => []),
+      getHomeRunLeaders(undefined, 10).catch(() => []),
+      getStolenBaseLeaders(undefined, 10).catch(() => []),
       isAdmin(),
     ]);
 
