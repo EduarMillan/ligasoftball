@@ -19,7 +19,7 @@ export function PlayerGameLog({ entries, className }: PlayerGameLogProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border">
-            {["Fecha", "AB", "H", "HR", "RBI", "R", "E", "AVG"].map((h) => (
+            {["Fecha", "AB", "H", "HR", "RBI", "R", "BB", "SO", "SB", "E", "AVG"].map((h) => (
               <th
                 key={h}
                 title={h !== "Fecha" ? getStatLabel(h) : undefined}
@@ -56,6 +56,15 @@ export function PlayerGameLog({ entries, className }: PlayerGameLogProps) {
               </td>
               <td className="px-2 py-2.5 text-center font-mono tabular-nums">
                 {entry.runs}
+              </td>
+              <td className="px-2 py-2.5 text-center font-mono tabular-nums">
+                {entry.walks}
+              </td>
+              <td className="px-2 py-2.5 text-center font-mono tabular-nums">
+                {entry.strikeouts}
+              </td>
+              <td className="px-2 py-2.5 text-center font-mono tabular-nums">
+                {entry.stolen_bases}
               </td>
               <td className="px-2 py-2.5 text-center font-mono tabular-nums">
                 {entry.errors}

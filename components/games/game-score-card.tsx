@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatGameDate } from "@/lib/utils/format";
+import { formatGameDate, formatGameTime } from "@/lib/utils/format";
 import { GAME_STATUS_LABELS, GAME_STATUS_COLORS } from "@/lib/utils/constants";
 import type { GameWithTeams } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -36,9 +36,16 @@ export function GameScoreCard({ game }: GameScoreCardProps) {
       >
         <CardContent className="pt-0">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-muted">
-              {formatGameDate(game.game_date)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">
+                {formatGameDate(game.game_date)}
+              </span>
+              {!isFinal && (
+                <span className="text-xs font-medium text-amber-400">
+                  {formatGameTime(game.game_date)}
+                </span>
+              )}
+            </div>
             <Badge className={cn(GAME_STATUS_COLORS[game.status])}>
               {GAME_STATUS_LABELS[game.status]}
             </Badge>

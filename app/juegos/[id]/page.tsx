@@ -11,7 +11,7 @@ import { QuickScoreForm } from "@/components/games/quick-score-form";
 import { GameStatusControl } from "@/components/games/game-status-control";
 import { getGame } from "@/lib/queries/games";
 import { getPlayerGameStats, getGameInnings } from "@/lib/queries/stats";
-import { formatGameDate } from "@/lib/utils/format";
+import { formatGameDate, formatGameTime } from "@/lib/utils/format";
 import { isAdmin } from "@/lib/auth";
 import { BarChart3, ClipboardList, MapPin, Pencil, User, Users } from "lucide-react";
 import type { GameWithTeams, PlayerGameStats, Player } from "@/lib/types";
@@ -44,7 +44,11 @@ export default async function JuegoDetailPage({
     <>
       <PageHeader
         title="Detalle del Juego"
-        description={formatGameDate(game.game_date)}
+        description={
+          isFinal
+            ? formatGameDate(game.game_date)
+            : `${formatGameDate(game.game_date)} · ${formatGameTime(game.game_date)}`
+        }
         action={
           admin ? (
             <div className="flex gap-2">

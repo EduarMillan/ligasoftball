@@ -2,7 +2,12 @@ import { format, parseISO, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 
 export function formatDate(date: string | Date, pattern = "d MMM yyyy"): string {
-  const d = typeof date === "string" ? parseISO(date) : date;
+  // Strip timezone offset so the stored hour displays as-is (no UTC→local conversion).
+  // The datetime-local input submits without TZ, Supabase stores as UTC, so
+  // "15:00 UTC" should always display as "3:00 PM", regardless of server TZ.
+  const str = typeof date === "string" ? date : date.toISOString();
+  const noTz = str.replace(/[+-]\d{2}:\d{2}$|Z$/, "");
+  const d = parseISO(noTz);
   if (!isValid(d)) return "";
   return format(d, pattern, { locale: es });
 }
@@ -13,6 +18,10 @@ export function formatGameDate(date: string | Date): string {
 
 export function formatShortDate(date: string | Date): string {
   return formatDate(date, "d/M");
+}
+
+export function formatGameTime(date: string | Date): string {
+  return formatDate(date, "h:mm a");
 }
 
 export function formatFullName(firstName: string, lastName: string): string {

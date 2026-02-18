@@ -25,7 +25,7 @@ export function NewGameForm({ teams, seasons, game, onSubmit }: NewGameFormProps
   const activeSeason = seasons.find((s) => s.is_active);
   const defaultSeasonId = game?.season_id ?? activeSeason?.id;
   const defaultDate = game?.game_date
-    ? new Date(game.game_date).toISOString().slice(0, 16)
+    ? (game.game_date as string).replace(/[+-]\d{2}:\d{2}$|Z$/, "").slice(0, 16)
     : undefined;
 
   return (

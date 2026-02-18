@@ -277,7 +277,7 @@ CREATE TRIGGER trg_update_game_score
 -- VIEW: player_career_batting — Stats de bateo acumuladas por carrera
 -- Calcula AVG, OBP, SLG, OPS, TB, etc.
 -- -------------------------------------------------------
-CREATE OR REPLACE VIEW public.player_career_batting AS
+CREATE OR REPLACE VIEW public.player_career_batting WITH (security_invoker = true) AS
 SELECT
   p.id                AS player_id,
   p.first_name,
@@ -424,7 +424,7 @@ GROUP BY p.id, p.first_name, p.last_name, p.jersey_number, p.photo_url,
 -- VIEW: player_career_pitching — Stats de pitcheo acumuladas
 -- Calcula ERA, WHIP, K/9, BB/9, H/9, K/BB, etc.
 -- -------------------------------------------------------
-CREATE OR REPLACE VIEW public.player_career_pitching AS
+CREATE OR REPLACE VIEW public.player_career_pitching WITH (security_invoker = true) AS
 SELECT
   p.id                AS player_id,
   p.first_name,
@@ -523,7 +523,7 @@ HAVING SUM(pgs.innings_pitched) > 0;
 -- VIEW: player_career_fielding — Stats de fildeo acumuladas
 -- Calcula FPCT, TC, etc.
 -- -------------------------------------------------------
-CREATE OR REPLACE VIEW public.player_career_fielding AS
+CREATE OR REPLACE VIEW public.player_career_fielding WITH (security_invoker = true) AS
 SELECT
   p.id                AS player_id,
   p.first_name,
@@ -565,7 +565,7 @@ GROUP BY p.id, p.first_name, p.last_name, p.jersey_number,
 -- VIEW: team_standings — Clasificación de equipos
 -- W, L, PCT, RS, RA, DIFF, racha, juegos de diferencia (GB)
 -- -------------------------------------------------------
-CREATE OR REPLACE VIEW public.team_standings AS
+CREATE OR REPLACE VIEW public.team_standings WITH (security_invoker = true) AS
 WITH team_records AS (
   SELECT
     t.id              AS team_id,
@@ -671,7 +671,7 @@ ORDER BY win_pct DESC, run_diff DESC;
 -- -------------------------------------------------------
 -- VIEW: season_batting_leaders — Para mostrar líderes rápidamente
 -- -------------------------------------------------------
-CREATE OR REPLACE VIEW public.season_batting_leaders AS
+CREATE OR REPLACE VIEW public.season_batting_leaders WITH (security_invoker = true) AS
 SELECT
   p.id              AS player_id,
   p.first_name,
@@ -730,7 +730,7 @@ GROUP BY p.id, p.first_name, p.last_name, p.jersey_number, p.photo_url,
 -- -------------------------------------------------------
 -- VIEW: season_pitching_leaders
 -- -------------------------------------------------------
-CREATE OR REPLACE VIEW public.season_pitching_leaders AS
+CREATE OR REPLACE VIEW public.season_pitching_leaders WITH (security_invoker = true) AS
 SELECT
   p.id              AS player_id,
   p.first_name,
