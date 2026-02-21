@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { PlayerSearch } from "@/components/players/player-search";
+import { PlayerCard } from "@/components/players/player-card";
 import { getPlayers } from "@/lib/queries/players";
 import { isAdmin } from "@/lib/auth";
 import { User, Plus } from "lucide-react";
@@ -48,7 +48,11 @@ export default async function JugadoresPage() {
           }
         />
       ) : (
-        <PlayerSearch players={players} />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
+          {players.map((player) => (
+            <PlayerCard key={player.id} player={player} />
+          ))}
+        </div>
       )}
     </>
   );
