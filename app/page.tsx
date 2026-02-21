@@ -9,7 +9,7 @@ import { getTeamStandings } from "@/lib/queries/teams";
 import { getRecentGames, getUpcomingGames } from "@/lib/queries/games";
 import { getBattingLeaders, getHomeRunLeaders, getStolenBaseLeaders } from "@/lib/queries/stats";
 import { isAdmin } from "@/lib/auth";
-import { Trophy, Calendar, TrendingUp, Plus, ArrowRight, Zap } from "lucide-react";
+import { Trophy, Calendar, TrendingUp, Plus, ArrowRight, Zap, Medal, AlertCircle } from "lucide-react";
 import type { GameWithTeams, TeamStanding } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -206,6 +206,60 @@ export default async function DashboardPage() {
               }))}
             />
           )}
+
+          {/* HR históricos pre-temporada */}
+          <Card className="glass-card border-gradient">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Zap size={18} className="text-amber-500" />
+                <div>
+                  <CardTitle className="text-base">HR Previos a la App</CardTitle>
+                  <p className="text-xs text-muted mt-0.5">Registros anteriores al sistema</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-400 bg-zinc-800/60 rounded-lg px-2.5 py-2 mb-3">
+                <AlertCircle size={12} className="shrink-0 text-amber-500/70" />
+                <span>Jonrones anotados antes que se comenzara a usar la aplicación</span>
+              </div>
+              {[
+                { name: "Alber Arias",      hr: 2 },
+                { name: "Daniel Sanchez",   hr: 1 },
+                { name: "Felix Rivas",      hr: 1 },
+                { name: "Jefferson Peña",   hr: 1 },
+                { name: "Jeison Noguera",   hr: 1 },
+                { name: "Michael",          hr: 1 },
+                { name: "Felix Bruno",      hr: 1 },
+              ].map((entry, i) => (
+                <div
+                  key={entry.name}
+                  className={`flex items-center gap-3 px-2 py-1.5 rounded-lg transition-colors${i === 0 ? " bg-amber-500/5" : ""}`}
+                >
+                  {i < 3 ? (
+                    <span className={`w-6 h-6 flex items-center justify-center${i === 0 ? " glow-amber rounded-full" : ""}`}>
+                      <Medal
+                        size={16}
+                        className={i === 0 ? "text-amber-400" : i === 1 ? "text-zinc-300" : "text-amber-700"}
+                      />
+                    </span>
+                  ) : (
+                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-zinc-800 text-zinc-500">
+                      {i + 1}
+                    </span>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate${i === 0 ? " text-amber-50" : ""}`}>
+                      {entry.name}
+                    </p>
+                  </div>
+                  <span className={`text-lg font-bold font-mono tabular-nums${i === 0 ? " text-amber-400" : ""}`}>
+                    {entry.hr}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
           {sbLeaders.length > 0 && (
             <LeaderCard
