@@ -480,8 +480,11 @@ html {
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: rgba(245, 158, 11, 0.5);
-  position: absolute;
-  bottom: clamp(-120px, -20vw, -100px);
+  position: fixed;
+  bottom: clamp(20px, 5vw, 36px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 /* Flash al salir */
