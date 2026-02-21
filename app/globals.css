@@ -221,6 +221,269 @@ html {
   background-size: 20px 20px;
 }
 
+/* =========================================
+   INTRO SCREEN — Animaciones tipo videojuego
+   ========================================= */
+
+@keyframes introExit {
+  0%   { transform: translateY(0);       opacity: 1; }
+  30%  { transform: translateY(-6px);    opacity: 1; }
+  100% { transform: translateY(-100vh);  opacity: 0; }
+}
+
+@keyframes introDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes introFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes introSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes introGlowReveal {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.95); filter: blur(8px); }
+  60%  { opacity: 1; transform: translateY(-2px) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
+}
+
+@keyframes introDivider {
+  from { width: 0; opacity: 0; }
+  to   { width: 8rem; opacity: 1; }
+}
+
+@keyframes introPulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.9; }
+}
+
+@keyframes introBeam {
+  0%   { top: -4px; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.6; }
+  100% { top: 100vh; opacity: 0; }
+}
+
+@keyframes introGlowPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1);   }
+  50%       { opacity: 0.8; transform: scale(1.25); }
+}
+
+@keyframes introFlash {
+  0%   { opacity: 0; }
+  40%  { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+
+@keyframes introBallFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg);  }
+  33%       { transform: translateY(-6px) rotate(2deg); }
+  66%       { transform: translateY(3px) rotate(-2deg); }
+}
+
+/* Layout principal */
+.intro-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  background: radial-gradient(ellipse at 50% 40%, #1c0d00 0%, #0d0d0f 55%, #000000 100%);
+}
+
+/* Scanlines sutiles */
+.intro-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+  z-index: 1;
+}
+
+/* Haz de luz que pasa */
+.intro-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.35), transparent);
+  pointer-events: none;
+  z-index: 2;
+  animation: introBeam 4s linear 400ms infinite;
+}
+
+/* Glow ambiental central */
+.intro-glow-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+.intro-glow-bg::after {
+  content: "";
+  width: min(80vw, 400px);
+  height: min(80vw, 400px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%);
+  animation: introGlowPulse 3s ease-in-out 500ms infinite;
+}
+
+/* Esquinas decorativas */
+.intro-corner {
+  position: absolute;
+  width: clamp(20px, 6vw, 32px);
+  height: clamp(20px, 6vw, 32px);
+  border-color: rgba(245, 158, 11, 0.45);
+  border-style: solid;
+  z-index: 3;
+  animation: introFadeIn 400ms ease-out 2400ms both;
+}
+.intro-corner-tl { top: clamp(16px, 4vw, 28px); left: clamp(16px, 4vw, 28px);  border-width: 2px 0 0 2px; }
+.intro-corner-tr { top: clamp(16px, 4vw, 28px); right: clamp(16px, 4vw, 28px);  border-width: 2px 2px 0 0; }
+.intro-corner-bl { bottom: clamp(16px, 4vw, 28px); left: clamp(16px, 4vw, 28px);  border-width: 0 0 2px 2px; }
+.intro-corner-br { bottom: clamp(16px, 4vw, 28px); right: clamp(16px, 4vw, 28px); border-width: 0 2px 2px 0; }
+
+/* Líneas horizontales decorativas */
+.intro-hline {
+  position: absolute;
+  left: clamp(48px, 12vw, 72px);
+  right: clamp(48px, 12vw, 72px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.2), transparent);
+  z-index: 3;
+  animation: introFadeIn 500ms ease-out 2600ms both;
+}
+.intro-hline-top    { top: clamp(40px, 9vw, 64px); }
+.intro-hline-bottom { bottom: clamp(40px, 9vw, 64px); }
+
+/* Contenido central */
+.intro-content {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(20px, 5vw, 32px);
+  padding: 0 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+/* Softball */
+.intro-ball-wrap {
+  position: relative;
+  width: clamp(100px, 28vw, 150px);
+  height: clamp(100px, 28vw, 150px);
+  animation: introBallFloat 4s ease-in-out 2000ms infinite;
+}
+.intro-ball-glow {
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%);
+  animation: introGlowPulse 2s ease-in-out 1000ms infinite;
+}
+.intro-ball-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.5));
+}
+
+/* Bloque de título */
+.intro-title-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.intro-label {
+  font-size: clamp(10px, 2.5vw, 13px);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(161, 161, 170, 0.7);
+  margin-bottom: 2px;
+}
+
+.intro-title-top {
+  font-size: clamp(28px, 8vw, 44px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+}
+
+.intro-title-main {
+  font-size: clamp(44px, 13vw, 72px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #fde68a 70%, #f59e0b 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 24px rgba(245, 158, 11, 0.7));
+}
+
+/* Divisor animado */
+.intro-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f59e0b, #fde68a, #f59e0b, transparent);
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+/* Subtítulo */
+.intro-subtitle {
+  font-size: clamp(10px, 2.8vw, 13px);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(161, 161, 170, 0.65);
+  text-align: center;
+}
+
+/* Tap hint */
+.intro-tap {
+  font-size: clamp(10px, 2.5vw, 12px);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(245, 158, 11, 0.5);
+  position: absolute;
+  bottom: clamp(-120px, -20vw, -100px);
+}
+
+/* Flash al salir */
+.intro-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  pointer-events: none;
+  z-index: 10;
+  animation: introFlash 600ms ease-out forwards;
+}
+
 /* Staggered table row animation */
 .stagger-rows > tr {
   opacity: 0;
