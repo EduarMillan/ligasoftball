@@ -447,6 +447,16 @@ html {
   filter: drop-shadow(0 0 24px rgba(245, 158, 11, 0.7));
 }
 
+/* Ciudad */
+.intro-title-city {
+  font-size: clamp(16px, 4.5vw, 26px);
+  font-weight: 600;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: rgba(253, 230, 138, 0.75);
+  margin-top: 2px;
+}
+
 /* Divisor animado */
 .intro-divider {
   height: 2px;

@@ -167,18 +167,24 @@ export function IntroScreen() {
           >
             Softball
           </h1>
+          <h2
+            className="intro-title-city"
+            style={{ animation: "introSlideUp 500ms ease-out 2500ms both" }}
+          >
+            Calama
+          </h2>
         </div>
 
         {/* Divider */}
         <div
           className="intro-divider"
-          style={{ animation: "introDivider 600ms ease-out 2700ms both" }}
+          style={{ animation: "introDivider 600ms ease-out 2900ms both" }}
         />
 
         {/* Subtitle */}
         <p
           className="intro-subtitle"
-          style={{ animation: "introFadeIn 600ms ease-out 3000ms both" }}
+          style={{ animation: "introFadeIn 600ms ease-out 3200ms both" }}
         >
           Estadísticas · Resultados · Temporada
         </p>
@@ -186,7 +192,7 @@ export function IntroScreen() {
         {/* Tap hint */}
         <p
           className="intro-tap"
-          style={{ animation: "introPulse 1.8s ease-in-out 3500ms infinite both" }}
+          style={{ animation: "introPulse 1.8s ease-in-out 3800ms infinite both" }}
         >
           Toca para continuar
         </p>
